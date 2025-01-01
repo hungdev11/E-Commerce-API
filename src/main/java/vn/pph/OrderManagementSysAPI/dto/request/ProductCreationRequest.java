@@ -1,4 +1,4 @@
-package vn.pph.OrderManagementSysAPI.request;
+package vn.pph.OrderManagementSysAPI.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
