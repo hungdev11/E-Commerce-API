@@ -12,6 +12,4 @@ public class UserSignUpRequest {
     String name;
     String email;
     String password;
-    //UserStatus status;
-    //boolean isVerify;
 }

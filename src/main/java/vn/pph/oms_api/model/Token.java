@@ -1,10 +1,8 @@
 package vn.pph.oms_api.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Entity
 @Data
@@ -12,13 +10,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Table(name = "tokens")
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class Token {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
     @Column(name = "user_id", nullable = false)
     Long userId;
+
     @Lob
-    @Column(name = "public_key", nullable = false)
-    private String publicKey;
+    @Column(name = "public_key", columnDefinition = "TEXT", nullable = false)
+    String publicKey;
 }
