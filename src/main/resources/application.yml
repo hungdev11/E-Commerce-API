@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: OrderManagementSysAPI
+  security:
+    user:
+      name: admin
+      password: admin123
+  datasource:
+    url: jdbc:mysql://localhost:3306/order-service
+    username: root
+    password: root
+    driverClassName: com.mysql.cj.jdbc.Driver
+  jpa:
+    database: mysql
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format-sql: true
+        use-sql-comments: true
+server:
+  port: 9999
+  servlet:
+    context-path: /oms
+logging:
+  level:
+    org.springframework.security: DEBUG
