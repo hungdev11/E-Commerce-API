@@ -70,14 +70,12 @@ public class AuthenticationServiceImp implements AuthenticationService {
 
             log.info("Successfully generated tokens for user ID: {}", user.getId());
 
-            SignUpResponse signUpResponse = SignUpResponse.builder()
+            return SignUpResponse.builder()
                     .userId(user.getId())
                     .privateKey(privateKeyString)
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .build();
-
-            return signUpResponse;
         } catch (Exception e) {
             log.error("Error during token generation process", e);
             throw new AppException(ErrorCode.SOME_THING_WENT_WRONG);
@@ -115,13 +113,12 @@ public class AuthenticationServiceImp implements AuthenticationService {
 
                 log.info("Successfully generated tokens for user ID: {}", user.getId());
 
-                 SignUpResponse signUpResponse = SignUpResponse.builder()
+                return SignUpResponse.builder()
                         .userId(user.getId())
                         .privateKey(newPrivateKeyString)
                         .accessToken(accessToken)
                         .refreshToken(refreshToken)
                         .build();
-                return signUpResponse;
             } catch (Exception e) {
                 log.error("Error during token generation process", e);
                 throw new AppException(ErrorCode.SOME_THING_WENT_WRONG);
@@ -140,7 +137,7 @@ public class AuthenticationServiceImp implements AuthenticationService {
             throw new AppException(ErrorCode.INVALID_PRIVATE_KEY);
         }
         // check info, email already check
-        if (checkLoginPassword(user, request.getPassword())) {
+        if (!checkLoginPassword(user, request.getPassword())) {
             log.error("User id {} got wrong password, with private key", user.getId());
             throw new AppException(ErrorCode.LOGIN_FAILED);
         }
@@ -203,18 +200,18 @@ public class AuthenticationServiceImp implements AuthenticationService {
         return sig.verify(Base64.getDecoder().decode(signature));
     }
     private PublicKey decodeStringToPublicKey(String publicKeyString) throws Exception {
-        log.info("Decode public key string");
         byte[] keyBytes = Base64.getDecoder().decode(publicKeyString);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        return keyFactory.generatePublic(new X509EncodedKeySpec(keyBytes));
+        PublicKey publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(keyBytes));
+        log.info("Decode public key string successfully");
+        return publicKey;
     }
 
     private PrivateKey decodeStringToPrivateKey(String privateKeyString) throws Exception {
-        byte[] keyBytes = Base64.getDecoder().decode(privateKeyString);
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+        byte[] keyBytes = Base64.getDecoder().decode(privateKeyString.replace(" ", "+"));
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
-        log.info("Decode public key string successfully");
+        PrivateKey privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
+        log.info("Decode private key string successfully");
         return privateKey;
     }
 
@@ -229,7 +226,6 @@ public class AuthenticationServiceImp implements AuthenticationService {
                 .isVerify(true)
                 .roles(roles)
                 .build();
-
         userRepository.save(user);
         log.info("User with email {} saved successfully", request.getEmail());
         return user;
