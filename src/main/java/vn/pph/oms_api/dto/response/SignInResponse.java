@@ -1,5 +1,6 @@
 package vn.pph.oms_api.dto.response;
 
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -9,8 +10,8 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SignUpResponse {
-    String privateKey;
+public class SignInResponse {
+    boolean authenticated; // ? have private key : vice versa
     Long userId;
     String accessToken;
     String refreshToken;

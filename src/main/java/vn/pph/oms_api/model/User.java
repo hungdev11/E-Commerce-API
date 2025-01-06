@@ -25,5 +25,5 @@ public class User {
     String password;
     UserStatus status;
     boolean isVerify;
-    Set<Role> roles;
+    Set<String> roles;
 }
