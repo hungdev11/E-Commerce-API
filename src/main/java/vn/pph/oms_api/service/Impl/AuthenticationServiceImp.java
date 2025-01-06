@@ -84,18 +84,19 @@ public class AuthenticationServiceImp implements AuthenticationService {
 
     @Override
     public Object signIn(UserSignInRequest request, String privateKeyString) {
-        if (!userRepository.existsByEmail(request.getEmail())) {
+        List<User> users = userRepository.findByEmail(request.getEmail());
+        if (users.isEmpty()) {
             log.error("Can not find user with email {}", request.getEmail());
             throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
+        User user = users.get(0);
+        if (Objects.nonNull(user) && !checkLoginPassword(user, request.getPassword())) {
+            log.error("User id {} got wrong password", user.getId());
+            throw new AppException(ErrorCode.LOGIN_FAILED);
+        }
         if (StringUtils.hasLength(privateKeyString)) {
-            return signInWithPrivateKey(request, privateKeyString);
+            return signInWithPrivateKey(user, privateKeyString);
         } else {
-            User user = userRepository.findByEmail(request.getEmail()).get(0);
-            if (!checkLoginPassword(user, request.getPassword())) {
-                log.error("User id {} got wrong password", user.getId());
-                throw new AppException(ErrorCode.LOGIN_FAILED);
-            }
             // generate new pair key and token
             try {
                 KeyPair keyPair = generateKeyPair();
@@ -128,18 +129,12 @@ public class AuthenticationServiceImp implements AuthenticationService {
     private boolean checkLoginPassword(User user, String loginPassword) {
         return passwordEncoder.matches(loginPassword, user.getPassword());
     }
-    public SignInResponse signInWithPrivateKey(UserSignInRequest request, String privateKeyString) {
+    public SignInResponse signInWithPrivateKey(User user, String privateKeyString) {
         log.info("User log in with private key");
-        User user = userRepository.findByEmail(request.getEmail()).get(0);
         // test private key
         if (!isValidPrivateKey(user, privateKeyString)) {
             log.error("User id {} got invalid private key", user.getId());
             throw new AppException(ErrorCode.INVALID_PRIVATE_KEY);
-        }
-        // check info, email already check
-        if (!checkLoginPassword(user, request.getPassword())) {
-            log.error("User id {} got wrong password, with private key", user.getId());
-            throw new AppException(ErrorCode.LOGIN_FAILED);
         }
         try {
             PrivateKey privateKey = decodeStringToPrivateKey(privateKeyString);
