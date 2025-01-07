@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import vn.pph.oms_api.dto.request.RefreshTokenRequest;
 import vn.pph.oms_api.dto.request.UserLogOutRequest;
 import vn.pph.oms_api.dto.request.UserSignInRequest;
 import vn.pph.oms_api.dto.request.UserSignUpRequest;
@@ -34,12 +35,20 @@ public class AuthenticationController {
                 .data(authenticationService.signIn(request, privateKey))
                 .build();
     }
-    @PostMapping("log-out")
-    public ApiResponse<?> logOut(@RequestBody UserLogOutRequest request) throws Exception {
+    @PostMapping("/log-out")
+    public ApiResponse<?> logOut(@RequestBody UserLogOutRequest request) {
         authenticationService.logOut(request);
         return ApiResponse.builder()
                 .code(200)
                 .message("Log out successfully")
+                .build();
+    }
+    @PostMapping("/refresh-token")
+    public ApiResponse<?> refreshToken(@RequestBody RefreshTokenRequest request) {
+        return ApiResponse.builder()
+                .code(200)
+                .message("Got new pair of tokens")
+                .data(authenticationService.refreshToken(request))
                 .build();
     }
 }

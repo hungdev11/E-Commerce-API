@@ -8,11 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import vn.pph.oms_api.dto.request.RefreshTokenRequest;
 import vn.pph.oms_api.dto.request.UserLogOutRequest;
 import vn.pph.oms_api.dto.request.UserSignInRequest;
 import vn.pph.oms_api.dto.request.UserSignUpRequest;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import vn.pph.oms_api.dto.response.RefreshTokenResponse;
 import vn.pph.oms_api.dto.response.SignInResponse;
 import vn.pph.oms_api.dto.response.SignUpResponse;
 import vn.pph.oms_api.exception.AppException;
@@ -106,10 +108,19 @@ public class AuthenticationServiceImp implements AuthenticationService {
                 String newPrivateKeyString = encodeKeyToString(keyPair.getPrivate());
 
                 //renew public key
-                Token token = tokenRepository.findByUserId(user.getId()).get(0);
-                token.setPublicKey(publicKeyString);
+                List<Token> tokens = tokenRepository.findByUserId(user.getId());
+                Token token;
+                if (!tokens.isEmpty()) {
+                    token = tokens.get(0);
+                    token.setPublicKey(publicKeyString);
+                } else {
+                    token = Token.builder()
+                            .id(user.getId())
+                            .publicKey(publicKeyString)
+                            .refreshTokensUsed(new HashSet<>())
+                            .build();
+                }
                 tokenRepository.save(token);
-
                 // Generate tokens
                 String accessToken = generateToken(user, keyPair.getPrivate(), "ACCESS", 2);
                 String refreshToken = generateToken(user, keyPair.getPrivate(), "REFRESH", 7);
@@ -130,7 +141,7 @@ public class AuthenticationServiceImp implements AuthenticationService {
     }
 
     @Override
-    public void logOut(UserLogOutRequest request) throws Exception {
+    public void logOut(UserLogOutRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         List<Token> tokens = tokenRepository.findByUserId(user.getId());
@@ -138,18 +149,73 @@ public class AuthenticationServiceImp implements AuthenticationService {
             log.error("Can not found token with user id {}", user.getId());
             throw new AppException(ErrorCode.TOKEN_NOT_FOUND);
         }
-        PublicKey publicKey = decodeStringToPublicKey(tokens.get(0).getPublicKey());
-        Claims claims = decodeJWT(request.getAccessToken(), publicKey);
-        if (user.getId().compareTo(Long.valueOf(claims.getSubject())) != 0) {
-            log.error("User id {} with id in token are different id in token {}", user.getId(), claims.getSubject());
-            throw new AppException(ErrorCode.USER_ID_DIFF_ID_IN_TOKEN);
+        try {
+            Token token = tokens.get(0);
+            PublicKey publicKey = decodeStringToPublicKey(token.getPublicKey());
+            Claims claims = decodeJWT(request.getAccessToken(), publicKey);
+            if (user.getId().compareTo(Long.valueOf(claims.getSubject())) != 0) {
+                log.error("User id {} with id in token are different id in token {}", user.getId(), claims.getSubject());
+                throw new AppException(ErrorCode.USER_ID_DIFF_ID_IN_TOKEN);
+            }
+            if (claims.getExpiration().before(new Date())) {
+                log.error("User access token expired");
+                throw new AppException(ErrorCode.TOKEN_EXPIRED);
+            }
+            token.setPublicKey("");
+            tokenRepository.save(token);
+        } catch (Exception e) {
+            log.error("Error during token generation process", e);
+            throw new AppException(ErrorCode.SOME_THING_WENT_WRONG);
         }
-        if (claims.getExpiration().before(new Date())) {
-            log.error("User access token expired");
-            throw new AppException(ErrorCode.TOKEN_EXPIRED);
-        }
-        tokenRepository.delete(tokens.get(0));
     }
+    @Override
+    public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        List<Token> tokens = tokenRepository.findByUserId(user.getId());
+        if (tokens.isEmpty()) {
+            log.error("Can not found token with user id {}", user.getId());
+            throw new AppException(ErrorCode.TOKEN_NOT_FOUND);
+        }
+        if (!isValidPrivateKey(user, request.getPrivateKey())) {
+            log.error("User id {} got invalid private key", user.getId());
+            throw new AppException(ErrorCode.INVALID_PRIVATE_KEY);
+        }
+        try {
+            Token token = tokens.get(0);
+            if (token.getRefreshTokensUsed().contains(request.getRefreshToken())) {
+                log.error("Suspect token");
+                // Next step can do is : delete all user's token to protect user and notification to user through email
+                throw new AppException(ErrorCode.SOME_THING_WENT_WRONG);
+            }
+            PublicKey publicKey = decodeStringToPublicKey(token.getPublicKey());
+            Claims claims = decodeJWT(request.getRefreshToken(), publicKey);
+            if (user.getId().compareTo(Long.valueOf(claims.getSubject())) != 0) {
+                log.error("User id {} with id in token are different id in token {}", user.getId(), claims.getSubject());
+                throw new AppException(ErrorCode.USER_ID_DIFF_ID_IN_TOKEN);
+            }
+            if (claims.getExpiration().before(new Date())) {
+                log.error("User access token expired");
+                throw new AppException(ErrorCode.TOKEN_EXPIRED);
+            }
+            token.getRefreshTokensUsed().add(request.getRefreshToken());
+            tokenRepository.save(token);
+            PrivateKey privateKey = decodeStringToPrivateKey(request.getPrivateKey());
+            // Generate tokens
+            String accessToken = generateToken(user, privateKey, "ACCESS", 2);
+            String refreshToken = generateToken(user, privateKey, "REFRESH", 7);
+            log.info("Successfully generated tokens for user ID: {}", user.getId());
+            return RefreshTokenResponse.builder()
+                    .userId(request.getUserId())
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error during token generation process", e);
+            throw new AppException(ErrorCode.SOME_THING_WENT_WRONG);
+        }
+    }
+
     private Claims decodeJWT(String token, PublicKey publicKey) {
         return Jwts.parserBuilder()
                 .setSigningKey(publicKey)
@@ -272,6 +338,7 @@ public class AuthenticationServiceImp implements AuthenticationService {
     private void storeToken(Long userId, String publicKey) {
         Token token = Token.builder()
                 .userId(userId)
+                .refreshTokensUsed(new HashSet<>())
                 .publicKey(publicKey)
                 .build();
         tokenRepository.save(token);

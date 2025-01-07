@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Set;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -21,4 +23,8 @@ public class Token {
     @Lob
     @Column(name = "public_key", columnDefinition = "TEXT", nullable = false, unique = true)
     String publicKey;
+
+    @Lob
+    @Column(name = "ref_used", columnDefinition = "BLOB")
+    Set<String> refreshTokensUsed;
 }

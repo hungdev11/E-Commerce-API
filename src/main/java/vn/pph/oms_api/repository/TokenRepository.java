@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface TokenRepository extends JpaRepository<Token, Long> {
     boolean existsByPublicKey(String publicKey);
+    boolean existsByUserId(Long userId);
     List<Token> findByUserId(Long userId);
 }
