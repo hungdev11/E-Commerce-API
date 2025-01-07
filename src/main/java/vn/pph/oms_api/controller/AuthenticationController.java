@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import vn.pph.oms_api.dto.request.UserLogOutRequest;
 import vn.pph.oms_api.dto.request.UserSignInRequest;
 import vn.pph.oms_api.dto.request.UserSignUpRequest;
 import vn.pph.oms_api.dto.response.ApiResponse;
@@ -31,6 +32,14 @@ public class AuthenticationController {
                 .code(200)
                 .message("Login successfully")
                 .data(authenticationService.signIn(request, privateKey))
+                .build();
+    }
+    @PostMapping("log-out")
+    public ApiResponse<?> logOut(@RequestBody UserLogOutRequest request) throws Exception {
+        authenticationService.logOut(request);
+        return ApiResponse.builder()
+                .code(200)
+                .message("Log out successfully")
                 .build();
     }
 }

@@ -1,5 +1,6 @@
 package vn.pph.oms_api.service.Impl;
 
+import io.jsonwebtoken.Claims;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -7,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import vn.pph.oms_api.dto.request.UserLogOutRequest;
 import vn.pph.oms_api.dto.request.UserSignInRequest;
 import vn.pph.oms_api.dto.request.UserSignUpRequest;
 import io.jsonwebtoken.Jwts;
@@ -126,6 +128,36 @@ public class AuthenticationServiceImp implements AuthenticationService {
             }
         }
     }
+
+    @Override
+    public void logOut(UserLogOutRequest request) throws Exception {
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        List<Token> tokens = tokenRepository.findByUserId(user.getId());
+        if (tokens.isEmpty()) {
+            log.error("Can not found token with user id {}", user.getId());
+            throw new AppException(ErrorCode.TOKEN_NOT_FOUND);
+        }
+        PublicKey publicKey = decodeStringToPublicKey(tokens.get(0).getPublicKey());
+        Claims claims = decodeJWT(request.getAccessToken(), publicKey);
+        if (user.getId().compareTo(Long.valueOf(claims.getSubject())) != 0) {
+            log.error("User id {} with id in token are different id in token {}", user.getId(), claims.getSubject());
+            throw new AppException(ErrorCode.USER_ID_DIFF_ID_IN_TOKEN);
+        }
+        if (claims.getExpiration().before(new Date())) {
+            log.error("User access token expired");
+            throw new AppException(ErrorCode.TOKEN_EXPIRED);
+        }
+        tokenRepository.delete(tokens.get(0));
+    }
+    private Claims decodeJWT(String token, PublicKey publicKey) {
+        return Jwts.parserBuilder()
+                .setSigningKey(publicKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
     private boolean checkLoginPassword(User user, String loginPassword) {
         return passwordEncoder.matches(loginPassword, user.getPassword());
     }

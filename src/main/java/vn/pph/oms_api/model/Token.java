@@ -15,10 +15,10 @@ public class Token {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = false, unique = true)
     Long userId;
 
     @Lob
-    @Column(name = "public_key", columnDefinition = "TEXT", nullable = false)
+    @Column(name = "public_key", columnDefinition = "TEXT", nullable = false, unique = true)
     String publicKey;
 }

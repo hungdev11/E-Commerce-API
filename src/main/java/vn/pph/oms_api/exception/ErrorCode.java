@@ -13,10 +13,13 @@ public enum ErrorCode {
     PRODUCT_EXITED(1101, "Product already exited", HttpStatus.BAD_REQUEST),
     USER_EMAIL_EXITED(1200, "User email already exited", HttpStatus.BAD_REQUEST),
     USER_NAME_EXITED(1201, "User name already exited", HttpStatus.BAD_REQUEST),
+    USER_ID_DIFF_ID_IN_TOKEN(1204, "User id in token is different", HttpStatus.BAD_REQUEST),
     USER_CREATE_FAILED(1202, "User create failed", HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND(1203, "Can not find user", HttpStatus.BAD_REQUEST),
     INVALID_PRIVATE_KEY(1250, "Invalid private key", HttpStatus.BAD_REQUEST),
-    LOGIN_FAILED(1251, "Login failed", HttpStatus.BAD_REQUEST)
+    LOGIN_FAILED(1251, "Login failed", HttpStatus.BAD_REQUEST),
+    TOKEN_EXPIRED(1252, "Token has been expired", HttpStatus.BAD_REQUEST),
+    TOKEN_NOT_FOUND(1253, "Token with user id not found", HttpStatus.BAD_REQUEST)
     ;
     int code;
     String message;
