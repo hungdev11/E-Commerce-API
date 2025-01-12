@@ -5,7 +5,7 @@ import org.springframework.data.domain.Pageable;
 import vn.pph.oms_api.dto.request.ProductCreationRequest;
 import vn.pph.oms_api.dto.response.PageResponse;
 import vn.pph.oms_api.dto.response.ProductResponse;
-import vn.pph.oms_api.model.Product;
+import vn.pph.oms_api.model.sku.Product;
 
 public interface ProductService {
     long addProduct(ProductCreationRequest product);

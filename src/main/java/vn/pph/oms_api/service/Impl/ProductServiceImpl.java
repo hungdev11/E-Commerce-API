@@ -14,7 +14,7 @@ import vn.pph.oms_api.dto.response.ProductResponse;
 import vn.pph.oms_api.exception.AppException;
 import vn.pph.oms_api.exception.ErrorCode;
 import vn.pph.oms_api.mapper.ProductMapper;
-import vn.pph.oms_api.model.Product;
+import vn.pph.oms_api.model.sku.Product;
 import org.springframework.stereotype.Service;
 import vn.pph.oms_api.repository.ProductRepository;
 import vn.pph.oms_api.service.ProductService;
