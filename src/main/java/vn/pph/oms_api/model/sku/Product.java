@@ -1,34 +1,36 @@
 package vn.pph.oms_api.model.sku;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import vn.pph.oms_api.model.AuditBase;
-import vn.pph.oms_api.model.IdBaseEntity;
+import vn.pph.oms_api.model.BaseEntity;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "sd_product")
-public class Product extends IdBaseEntity {
-    @Column(name = "product_name")
+@Table(name = "product")
+public class Product extends BaseEntity {
+    @Column(name = "product_name", nullable = false, unique = true)
     private String productName;
+
+    @Column(name = "thumb")
+    private String productThumb;
 
     @Column(name = "product_desc")
     private String productDesc;
 
-    @Column(name = "product_status")
-    private Byte productStatus;
+    @Column(name = "product_price")
+    private BigDecimal productPrice;
 
-    @Column(name = "product_attrs", columnDefinition = "json")
-    private String productAttrs; // Consider using `@Convert` if working with a Map
+    @Column(name = "product_status")
+    private Boolean productStatus; // 0: out of stock, 1: in stock
 
     @Column(name = "product_shopId")
     private Long productShopId;
@@ -39,6 +41,15 @@ public class Product extends IdBaseEntity {
     @Column(name = "sort")
     private Integer sort;
 
-    @Embedded
-    private AuditBase audit;
+    @Column(name = "slug")
+    private String slug;
+
+    @Column(name = "is_draft")
+    private boolean isDraft;
+
+    @Column(name = "is_publish")
+    private boolean isPublish;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    private List<Sku> skuList;
 }
