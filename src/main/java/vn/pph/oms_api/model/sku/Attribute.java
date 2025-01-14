@@ -16,6 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @Table(name = "attr")
 public class Attribute extends BaseEntity {
+    @Column(name = "attr_name")
     private String name;
 
     @Column(name = "attr_type")

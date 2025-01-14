@@ -45,11 +45,11 @@ public class AuthenticationServiceImp implements AuthenticationService {
 
         if (userRepository.existsByEmail(request.getEmail())) {
             log.warn("Email {} is already registered", request.getEmail());
-            throw new AppException(ErrorCode.USER_EMAIL_EXITED);
+            throw new AppException(ErrorCode.USER_EMAIL_EXISTED);
         }
         if (userRepository.existsByName(request.getName())) {
             log.warn("Name {} is already existed in system", request.getName());
-            throw new AppException(ErrorCode.USER_NAME_EXITED);
+            throw new AppException(ErrorCode.USER_NAME_EXISTED);
         }
 
         // Hash password and save user

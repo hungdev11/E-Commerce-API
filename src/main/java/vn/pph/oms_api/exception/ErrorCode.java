@@ -10,9 +10,10 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
     SOME_THING_WENT_WRONG(999, "Not OK", HttpStatus.BAD_REQUEST),
     PRODUCT_NOT_FOUND(1100, "Product not found", HttpStatus.BAD_REQUEST),
-    PRODUCT_EXITED(1101, "Product already exited", HttpStatus.BAD_REQUEST),
-    USER_EMAIL_EXITED(1200, "User email already exited", HttpStatus.BAD_REQUEST),
-    USER_NAME_EXITED(1201, "User name already exited", HttpStatus.BAD_REQUEST),
+    PRODUCT_EXISTED(1101, "Product already existed", HttpStatus.BAD_REQUEST),
+    ATTR_EXISTED(1150, "Attribute already existed", HttpStatus.BAD_REQUEST),
+    USER_EMAIL_EXISTED(1200, "User email already existed", HttpStatus.BAD_REQUEST),
+    USER_NAME_EXISTED(1201, "User name already existed", HttpStatus.BAD_REQUEST),
     USER_ID_DIFF_ID_IN_TOKEN(1204, "User id in token is different", HttpStatus.BAD_REQUEST),
     USER_CREATE_FAILED(1202, "User create failed", HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND(1203, "Can not find user", HttpStatus.BAD_REQUEST),

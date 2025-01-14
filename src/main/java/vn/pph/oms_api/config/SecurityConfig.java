@@ -26,12 +26,13 @@ public class SecurityConfig {
     @Autowired
     private TokenRepository tokenRepository;
 
-    private static final String[] PUBLIC_ENDPOINTS = {
+    private static final String[] PUBLIC_ENDPOINTS = { // add authorization later
             "/authentication/sign-up",
             "/authentication/sign-in",
             "/authentication/refresh-token", // Yêu cầu xác thực để làm mới token
             "/authentication/log-out",    // Yêu cầu xác thực để đăng xuất
-            "/products",
+            "/products", // public / un-public
+            "/attribute/", // only ADMIN
     };
     private static final String[] AUTHENTICATED_ENDPOINTS = {
     };
