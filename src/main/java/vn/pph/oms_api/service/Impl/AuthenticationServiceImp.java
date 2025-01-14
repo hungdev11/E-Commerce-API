@@ -12,8 +12,6 @@ import vn.pph.oms_api.dto.request.RefreshTokenRequest;
 import vn.pph.oms_api.dto.request.UserLogOutRequest;
 import vn.pph.oms_api.dto.request.UserSignInRequest;
 import vn.pph.oms_api.dto.request.UserSignUpRequest;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import vn.pph.oms_api.dto.response.RefreshTokenResponse;
 import vn.pph.oms_api.dto.response.SignInResponse;
 import vn.pph.oms_api.dto.response.SignUpResponse;
@@ -25,13 +23,11 @@ import vn.pph.oms_api.repository.TokenRepository;
 import vn.pph.oms_api.repository.UserRepository;
 import vn.pph.oms_api.service.AuthenticationService;
 import vn.pph.oms_api.utils.Role;
+import vn.pph.oms_api.utils.TokenUtils;
 import vn.pph.oms_api.utils.UserStatus;
 
 import java.security.*;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -42,7 +38,6 @@ public class AuthenticationServiceImp implements AuthenticationService {
     TokenRepository tokenRepository;
     UserRepository userRepository;
     PasswordEncoder passwordEncoder;
-    static final long DAYS_IN_MILLISECONDS = TimeUnit.DAYS.toMillis(1);
 
     @Override
     public SignUpResponse signUp(UserSignUpRequest request) {
@@ -62,15 +57,15 @@ public class AuthenticationServiceImp implements AuthenticationService {
         User user = createUser(request, hashedPassword);
 
         try {
-            KeyPair keyPair = generateKeyPair();
-            String publicKeyString = encodeKeyToString(keyPair.getPublic());
-            String privateKeyString = encodeKeyToString(keyPair.getPrivate());
+            KeyPair keyPair = TokenUtils.generateKeyPair();
+            String publicKeyString = TokenUtils.encodeKeyToString(keyPair.getPublic());
+            String privateKeyString = TokenUtils.encodeKeyToString(keyPair.getPrivate());
 
             storeToken(user.getId(), publicKeyString);
 
             // Generate tokens
-            String accessToken = generateToken(user, keyPair.getPrivate(), "ACCESS", 2);
-            String refreshToken = generateToken(user, keyPair.getPrivate(), "REFRESH", 7);
+            String accessToken = TokenUtils.generateToken(user, keyPair.getPrivate(), "ACCESS", 2);
+            String refreshToken = TokenUtils.generateToken(user, keyPair.getPrivate(), "REFRESH", 7);
 
             log.info("Successfully generated tokens for user ID: {}", user.getId());
 
@@ -103,9 +98,9 @@ public class AuthenticationServiceImp implements AuthenticationService {
         } else {
             // generate new pair key and token
             try {
-                KeyPair keyPair = generateKeyPair();
-                String publicKeyString = encodeKeyToString(keyPair.getPublic());
-                String newPrivateKeyString = encodeKeyToString(keyPair.getPrivate());
+                KeyPair keyPair = TokenUtils.generateKeyPair();
+                String publicKeyString = TokenUtils.encodeKeyToString(keyPair.getPublic());
+                String newPrivateKeyString = TokenUtils.encodeKeyToString(keyPair.getPrivate());
 
                 //renew public key
                 List<Token> tokens = tokenRepository.findByUserId(user.getId());
@@ -122,8 +117,8 @@ public class AuthenticationServiceImp implements AuthenticationService {
                 }
                 tokenRepository.save(token);
                 // Generate tokens
-                String accessToken = generateToken(user, keyPair.getPrivate(), "ACCESS", 2);
-                String refreshToken = generateToken(user, keyPair.getPrivate(), "REFRESH", 7);
+                String accessToken = TokenUtils.generateToken(user, keyPair.getPrivate(), "ACCESS", 2);
+                String refreshToken = TokenUtils.generateToken(user, keyPair.getPrivate(), "REFRESH", 7);
 
                 log.info("Successfully generated tokens for user ID: {}", user.getId());
 
@@ -151,8 +146,8 @@ public class AuthenticationServiceImp implements AuthenticationService {
         }
         try {
             Token token = tokens.get(0);
-            PublicKey publicKey = decodeStringToPublicKey(token.getPublicKey());
-            Claims claims = decodeJWT(request.getAccessToken(), publicKey);
+            PublicKey publicKey = TokenUtils.decodeStringToPublicKey(token.getPublicKey());
+            Claims claims = TokenUtils.decodeJWT(request.getAccessToken(), publicKey);
             if (user.getId().compareTo(Long.valueOf(claims.getSubject())) != 0) {
                 log.error("User id {} with id in token are different id in token {}", user.getId(), claims.getSubject());
                 throw new AppException(ErrorCode.USER_ID_DIFF_ID_IN_TOKEN);
@@ -188,8 +183,8 @@ public class AuthenticationServiceImp implements AuthenticationService {
                 // Next step can do is : delete all user's token to protect user and notification to user through email
                 throw new AppException(ErrorCode.SOME_THING_WENT_WRONG);
             }
-            PublicKey publicKey = decodeStringToPublicKey(token.getPublicKey());
-            Claims claims = decodeJWT(request.getRefreshToken(), publicKey);
+            PublicKey publicKey = TokenUtils.decodeStringToPublicKey(token.getPublicKey());
+            Claims claims = TokenUtils.decodeJWT(request.getRefreshToken(), publicKey);
             if (user.getId().compareTo(Long.valueOf(claims.getSubject())) != 0) {
                 log.error("User id {} with id in token are different id in token {}", user.getId(), claims.getSubject());
                 throw new AppException(ErrorCode.USER_ID_DIFF_ID_IN_TOKEN);
@@ -200,10 +195,10 @@ public class AuthenticationServiceImp implements AuthenticationService {
             }
             token.getRefreshTokensUsed().add(request.getRefreshToken());
             tokenRepository.save(token);
-            PrivateKey privateKey = decodeStringToPrivateKey(request.getPrivateKey());
+            PrivateKey privateKey = TokenUtils.decodeStringToPrivateKey(request.getPrivateKey());
             // Generate tokens
-            String accessToken = generateToken(user, privateKey, "ACCESS", 2);
-            String refreshToken = generateToken(user, privateKey, "REFRESH", 7);
+            String accessToken = TokenUtils.generateToken(user, privateKey, "ACCESS", 2);
+            String refreshToken = TokenUtils.generateToken(user, privateKey, "REFRESH", 7);
             log.info("Successfully generated tokens for user ID: {}", user.getId());
             return RefreshTokenResponse.builder()
                     .userId(request.getUserId())
@@ -216,17 +211,10 @@ public class AuthenticationServiceImp implements AuthenticationService {
         }
     }
 
-    private Claims decodeJWT(String token, PublicKey publicKey) {
-        return Jwts.parserBuilder()
-                .setSigningKey(publicKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
-
     private boolean checkLoginPassword(User user, String loginPassword) {
         return passwordEncoder.matches(loginPassword, user.getPassword());
     }
+
     public SignInResponse signInWithPrivateKey(User user, String privateKeyString) {
         log.info("User log in with private key");
         // test private key
@@ -235,11 +223,11 @@ public class AuthenticationServiceImp implements AuthenticationService {
             throw new AppException(ErrorCode.INVALID_PRIVATE_KEY);
         }
         try {
-            PrivateKey privateKey = decodeStringToPrivateKey(privateKeyString);
+            PrivateKey privateKey = TokenUtils.decodeStringToPrivateKey(privateKeyString);
             log.info("Convert private key successfully!!");
             //generate new token with this valid private key
-            String accessToken = generateToken(user, privateKey, "ACCESS", 2);
-            String refreshToken = generateToken(user, privateKey, "REFRESH", 7);
+            String accessToken = TokenUtils.generateToken(user, privateKey, "ACCESS", 2);
+            String refreshToken = TokenUtils.generateToken(user, privateKey, "REFRESH", 7);
 
             log.info("Successfully generated tokens for user ID: {}", user.getId());
             return SignInResponse.builder()
@@ -259,53 +247,24 @@ public class AuthenticationServiceImp implements AuthenticationService {
             String testPayload = "test-payload-" + System.currentTimeMillis();
 
             // Convert private key string to PrivateKey object
-            PrivateKey privateKey = decodeStringToPrivateKey(privateKeyString);
+            PrivateKey privateKey = TokenUtils.decodeStringToPrivateKey(privateKeyString);
 
             // Sign the payload using the private key
-            String signature = signPayload(privateKey, testPayload);
+            String signature = TokenUtils.signPayload(privateKey, testPayload);
 
             // Retrieve the public key for the user from the database
             String userPublicKeyString = tokenRepository.findByUserId(user.getId()).get(0).getPublicKey();
 
             // Convert public key string to PublicKey object
-            PublicKey publicKey = decodeStringToPublicKey(userPublicKeyString);
+            PublicKey publicKey = TokenUtils.decodeStringToPublicKey(userPublicKeyString);
 
             // Verify the signature using the public key
-            return verifySignature(publicKey, testPayload, signature);
+            return TokenUtils.verifySignature(publicKey, testPayload, signature);
 
         } catch (Exception e) {
             log.error("Error validating user's private key", e);
             return false; // Private key is invalid or an error occurred
         }
-    }
-    private String signPayload(PrivateKey privateKey, String payload) throws Exception {
-        log.info("Sign test payload using private key");
-        Signature signature = Signature.getInstance("SHA256withRSA");
-        signature.initSign(privateKey);
-        signature.update(payload.getBytes());
-        return Base64.getEncoder().encodeToString(signature.sign());
-    }
-    private boolean verifySignature(PublicKey publicKey, String payload, String signature) throws Exception {
-        log.info("Verify using public key");
-        Signature sig = Signature.getInstance("SHA256withRSA");
-        sig.initVerify(publicKey);
-        sig.update(payload.getBytes());
-        return sig.verify(Base64.getDecoder().decode(signature));
-    }
-    private PublicKey decodeStringToPublicKey(String publicKeyString) throws Exception {
-        byte[] keyBytes = Base64.getDecoder().decode(publicKeyString);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PublicKey publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(keyBytes));
-        log.info("Decode public key string successfully");
-        return publicKey;
-    }
-
-    private PrivateKey decodeStringToPrivateKey(String privateKeyString) throws Exception {
-        byte[] keyBytes = Base64.getDecoder().decode(privateKeyString.replace(" ", "+"));
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PrivateKey privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
-        log.info("Decode private key string successfully");
-        return privateKey;
     }
 
     private User createUser(UserSignUpRequest request, String hashedPassword) {
@@ -324,17 +283,6 @@ public class AuthenticationServiceImp implements AuthenticationService {
         return user;
     }
 
-    private KeyPair generateKeyPair() throws NoSuchAlgorithmException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(2048);
-        log.debug("RSA KeyPair generated");
-        return keyPairGenerator.generateKeyPair();
-    }
-
-    private String encodeKeyToString(Key key) {
-        return Base64.getEncoder().encodeToString(key.getEncoded());
-    }
-
     private void storeToken(Long userId, String publicKey) {
         Token token = Token.builder()
                 .userId(userId)
@@ -343,22 +291,5 @@ public class AuthenticationServiceImp implements AuthenticationService {
                 .build();
         tokenRepository.save(token);
         log.info("Public key stored in database for user ID: {}", userId);
-    }
-
-    private String generateToken(User user, PrivateKey privateKey, String typeToken, int days) {
-        long now = System.currentTimeMillis();
-        long expiry = now + days * DAYS_IN_MILLISECONDS;
-
-        log.info("Generating {} token for user ID: {} with expiry in {} days", typeToken, user.getId(), days);
-
-        return Jwts.builder()
-                .setSubject(user.getId().toString())
-                .claim("email", user.getEmail())
-                .claim("type", typeToken)
-                .claim("role", user.getRoles())
-                .setIssuedAt(new Date(now))
-                .setExpiration(new Date(expiry))
-                .signWith(privateKey, SignatureAlgorithm.RS256)
-                .compact();
     }
 }
