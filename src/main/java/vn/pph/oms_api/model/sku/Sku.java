@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import vn.pph.oms_api.model.BaseEntity;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 @Data
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Table(name = "sku")
 public class Sku extends BaseEntity {
+
     @Column(name = "sku_no", unique = true, nullable = false)
     private String skuNo;
 
@@ -25,11 +27,15 @@ public class Sku extends BaseEntity {
     @Column(name = "sku_description")
     private String skuDescription;
 
-    @Column(name = "status", nullable = false) // 0: in stock/ 1: out of stock
-    private Boolean status;
+    // Sử dụng kiểu boolean, sẽ được ánh xạ thành TINYINT(1) trong MySQL
+    @Column(name = "status", nullable = false)
+    private boolean status; // 0: in stock / 1: out of stock
 
     @Column(name = "sort")
-    private Integer sort;
+    private int sort;
+
+    @Column(name = "is_default", nullable = false) // 0: not default, 1: default
+    private boolean isDefault;
 
     @Column(name = "sku_stock", nullable = false)
     private Integer skuStock;
@@ -40,4 +46,7 @@ public class Sku extends BaseEntity {
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "spu_id")
     private Product product;
+
+    @OneToMany(mappedBy = "sku", cascade = CascadeType.ALL)
+    private List<AttributeValue> valueList;
 }

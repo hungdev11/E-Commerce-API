@@ -47,11 +47,12 @@ public class SecurityConfig {
         //prevent api end-point of attack cross-site
         http.csrf(CsrfConfigurer::disable);
 //        http.formLogin(form -> form.loginProcessingUrl("/login"));
-        http.authorizeHttpRequests(req -> req
-                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                .requestMatchers(AUTHENTICATED_ENDPOINTS).authenticated()
-                .anyRequest().denyAll()
-        );
+//        http.authorizeHttpRequests(req -> req
+//                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+//                .requestMatchers(AUTHENTICATED_ENDPOINTS).authenticated()
+//                .anyRequest().denyAll()
+//        );
+        http.authorizeHttpRequests(req -> req.anyRequest().permitAll()); // permit all end point for development
         //http.oauth2ResourceServer(oauth -> oauth.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder(1L))));
         return http.build();
     }

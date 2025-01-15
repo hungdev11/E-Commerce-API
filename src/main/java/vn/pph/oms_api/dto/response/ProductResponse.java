@@ -15,4 +15,5 @@ public class ProductResponse {
     String name;
     BigDecimal price;
     Integer stock;
+    int countSku;
 }

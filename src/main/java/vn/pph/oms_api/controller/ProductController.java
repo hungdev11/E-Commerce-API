@@ -18,16 +18,16 @@ import vn.pph.oms_api.service.ProductService;
 @RequestMapping("/products")
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class ProductController {
-//    ProductService productService;
-//    @PostMapping("/")
-//    public ApiResponse<Long> addNewProduct(@RequestBody ProductCreationRequest request) {
-//        log.info("Controller: add product");
-//        return ApiResponse.<Long>builder()
-//                .code(201)
-//                .message("Add product successfully")
-//                .data(productService.addProduct(request))
-//                .build();
-//    }
+    ProductService productService;
+    @PostMapping("/")
+    public ApiResponse<?> addNewProduct(@RequestBody ProductCreationRequest request) {
+        log.info("Controller: add product");
+        return ApiResponse.builder()
+                .code(201)
+                .message("Add product successfully")
+                .data(productService.addProduct(request))
+                .build();
+    }
 //    @GetMapping("/{productId}")
 //    public ApiResponse<ProductResponse> getProductById(@PathVariable Long productId) {
 //        log.info("Controller: get product with id {}", productId);
