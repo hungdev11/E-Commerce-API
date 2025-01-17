@@ -11,12 +11,9 @@ import java.math.BigDecimal;
 @Setter
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ProductResponse {
+public class ProductCreationResponse {
     String name;
     BigDecimal price;
-    String description;
-    String thumb;
-    int stock;
-    int skuCount;
+    Integer stock;
+    int countSku;
 }
-

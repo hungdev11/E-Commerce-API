@@ -12,10 +12,10 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import vn.pph.oms_api.dto.request.SkuCreationRequest;
 import vn.pph.oms_api.dto.response.PageResponse;
+import vn.pph.oms_api.dto.response.ProductCreationResponse;
 import vn.pph.oms_api.dto.response.ProductResponse;
 import vn.pph.oms_api.exception.AppException;
 import vn.pph.oms_api.exception.ErrorCode;
-import vn.pph.oms_api.mapper.ProductMapper;
 import vn.pph.oms_api.model.sku.Attribute;
 import vn.pph.oms_api.model.sku.AttributeValue;
 import vn.pph.oms_api.model.sku.Product;
@@ -25,10 +25,7 @@ import vn.pph.oms_api.repository.*;
 import vn.pph.oms_api.service.ProductService;
 import vn.pph.oms_api.utils.ProductUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -42,14 +39,8 @@ public class ProductServiceImpl implements ProductService {
     SkuRepository skuRepository;
     @Override
     @Transactional
-    public ProductResponse addProduct(ProductCreationRequest productRequest) {
-        log.info("Service: Checking shop id for shop {}", productRequest.getShopId());
-
-        if (!userRepository.existsById(productRequest.getShopId())) {
-            log.error("Service: Shop with id {} not found", productRequest.getShopId());
-            throw new AppException(ErrorCode.USER_NOT_FOUND);
-        }
-
+    public ProductCreationResponse addProduct(ProductCreationRequest productRequest) {
+        checkShopId(productRequest.getShopId());
         log.info("Service: Adding product with name {}", productRequest.getProductName());
 
         // Check if product exists
@@ -149,48 +140,117 @@ public class ProductServiceImpl implements ProductService {
         productRepository.save(productSave1st);
         log.info("Service: Product {} updated and saved", productSave1st.getProductName());
 
-        return ProductResponse.builder()
+        return ProductCreationResponse.builder()
                 .name(productSave1st.getProductName())
                 .stock(totalStock)
                 .price(productSave1st.getProductPrice())
                 .countSku(skuReqList.size())
                 .build();
     }
-//
-//    @Override
-//    public ProductResponse getProductById(Long productId) {
-//        log.info("Service: get product by id {} ", productId);
-//        Product product = getProduct(productId);
-//        return productMapper.toProductResponse(product);
-//    }
-//
-//    @Override
-//    public PageResponse<?> getProductList(int page, int size, String sortBy, String direction) {
-//        log.info("Service: get product list with size {}, page {}, by {}, direction {}", size, page, sortBy, direction);
-//        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
-//        Sort sortWith = Sort.by(sortDirection, sortBy);
-//        Pageable pageable = PageRequest.of(page, size, sortWith);
-//        Page<Product> products = productRepository.findAll(pageable);
-//        return convertToPageResponse(products, pageable);
-//    }
-//
-//    @Override
-//    public Product getProduct(Long productId) {
-//        log.info("Service: find product with product id");
-//        return productRepository.findById(productId).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-//    }
-//
-//    @Override
-//    public PageResponse<?> convertToPageResponse(Page<Product> productPage, Pageable pageable) {
-//        log.info("Service: convert product to page response");
-//        List<ProductResponse> responses = productPage.map(productMapper::toProductResponse).toList();
-//        return PageResponse.builder()
-//                .page(pageable.getPageNumber())
-//                .size(productPage.getSize())
-//                .total(productPage.getTotalPages())
-//                .items(responses)
-//                .build();
-//    }
+
+    @Override
+    public ProductResponse getProductById(Long productId) {
+        Product product = findProductById(productId);
+        List<Sku> skuList = product.getSkuList();
+        ProductResponse productResponse = ProductResponse.builder()
+                .name(product.getProductName())
+                .price(product.getProductPrice())
+                .description(product.getProductDesc())
+                .thumb(product.getProductThumb())
+                .stock(skuList.stream().mapToInt(Sku::getSkuStock).sum())
+                .skuCount(skuList.size())
+                .build();
+        return productResponse;
+    }
+
+    @Override
+    public PageResponse<?> getAllProductsOfShop(Long shopId, int page, int size, String sortBy, String direction) {
+        checkShopId(shopId);
+        log.info("Service: get product list with size {}, page {}, by {}, direction {}", size, page, sortBy, direction);
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort sortWith = Sort.by(sortDirection, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sortWith);
+        Page<Product> products = productRepository.findAllByProductShopId(shopId, pageable);
+        return convertToPageResponse(products, pageable);
+    }
+
+    @Override
+    public PageResponse<?> productDraftList(Long shopId, int page, int size) {
+        checkShopId(shopId);
+        log.info("Service: get draft product list with size {}, page {}", size, page);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Product> products = productRepository
+                .findProductsByShopAndStatus(shopId, true, false, pageable);
+        return convertToPageResponse(products, pageable);
+    }
+
+    @Override
+    public PageResponse<?> productPublishList(Long shopId, int page, int size) {
+        checkShopId(shopId);
+        log.info("Service: get publish product list with size {}, page {}", size, page);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Product> products = productRepository
+                .findProductsByShopAndStatus(shopId, false, true, pageable);
+        return convertToPageResponse(products, pageable);
+    }
+
+    @Override
+    public boolean publishProduct(Long shopId, Long productId) {
+        checkShopId(shopId);
+        Product product = findProductById(productId);
+        log.info("Publishing product id {}", productId);
+        product.setPublish(true);
+        product.setDraft(false);
+        productRepository.save(product);
+        return true;
+    }
+
+    @Override
+    public boolean unPublishProduct(Long shopId, Long productId) {
+        checkShopId(shopId);
+        Product product = findProductById(productId);
+        log.info("Drafting product id {}", productId);
+        product.setPublish(false);
+        product.setDraft(true);
+        productRepository.save(product);
+        return true;
+    }
+
+    @Override
+    public PageResponse<List<ProductResponse>> convertToPageResponse(Page<Product> productPage, Pageable pageable) {
+        log.info("Service: convert product to page response");
+
+        // Map từng sản phẩm trong Page<Product> sang ProductResponse
+        List<ProductResponse> responses = productPage.stream()
+                .map(product -> ProductResponse.builder()
+                        .name(product.getProductName())
+                        .price(product.getProductPrice())
+                        .description(product.getProductDesc())
+                        .thumb(product.getProductThumb())
+                        .stock(product.getSkuList().stream().mapToInt(Sku::getSkuStock).sum())
+                        .skuCount(product.getSkuList().size())
+                        .build())
+                .toList();
+
+        // Tạo PageResponse
+        return PageResponse.<List<ProductResponse>>builder()
+                .page(pageable.getPageNumber())
+                .size(productPage.getSize())
+                .total(productPage.getTotalPages())
+                .items(responses)
+                .build();
+    }
+    private void checkShopId(Long shopId) {
+        log.info("Service: Checking shop id for shop {}", shopId);
+        if (!userRepository.existsById(shopId)) {
+            log.error("Service: Shop with id {} not found", shopId);
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+    }
+    private Product findProductById(Long id) {
+        log.info("Service: Get product id {}", id);
+        return productRepository.findById(id).orElseThrow(()->new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+    }
 ////    static String LIKE_FORMAT = "%%%s%%";
 ////    @Override
 ////    public ProductResponse getProductsByName(String productName) {
