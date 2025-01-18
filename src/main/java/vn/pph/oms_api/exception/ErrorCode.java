@@ -22,7 +22,12 @@ public enum ErrorCode {
     INVALID_PRIVATE_KEY(1250, "Invalid private key", HttpStatus.BAD_REQUEST),
     LOGIN_FAILED(1251, "Login failed", HttpStatus.BAD_REQUEST),
     TOKEN_EXPIRED(1252, "Token has been expired", HttpStatus.BAD_REQUEST),
-    TOKEN_NOT_FOUND(1253, "Token with user id not found", HttpStatus.BAD_REQUEST)
+    TOKEN_NOT_FOUND(1253, "Token with user id not found", HttpStatus.BAD_REQUEST),
+    SKU_NOT_FOUND(1300, "Sku not found", HttpStatus.BAD_REQUEST),
+    SKU_INCOMPATIBLE_PRODUCT(1301, "Product did not contain this sku", HttpStatus.BAD_REQUEST),
+    INVALID_DISCOUNT_QUANTITY(1400, "Maximum quantity must be greater than max discount user can use", HttpStatus.BAD_REQUEST),
+    DISCOUNT_EXISTED(1401, "Shop already has that discount code", HttpStatus.BAD_REQUEST),
+    PRODUCT_NOT_BELONG_TO_SHOP(1402, "Some product not belong to shop", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;

@@ -1,9 +1,6 @@
 package vn.pph.oms_api.service.Impl;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.transaction.annotation.Transactional;
 import vn.pph.oms_api.dto.request.ProductCreationRequest;
 import lombok.AccessLevel;
@@ -14,6 +11,7 @@ import vn.pph.oms_api.dto.request.SkuCreationRequest;
 import vn.pph.oms_api.dto.response.PageResponse;
 import vn.pph.oms_api.dto.response.ProductCreationResponse;
 import vn.pph.oms_api.dto.response.ProductResponse;
+import vn.pph.oms_api.dto.response.SkuResponse;
 import vn.pph.oms_api.exception.AppException;
 import vn.pph.oms_api.exception.ErrorCode;
 import vn.pph.oms_api.model.sku.Attribute;
@@ -37,6 +35,7 @@ public class ProductServiceImpl implements ProductService {
     ProductRepository productRepository;
     AttributeValueRepository attributeValueRepository;
     SkuRepository skuRepository;
+
     @Override
     @Transactional
     public ProductCreationResponse addProduct(ProductCreationRequest productRequest) {
@@ -195,6 +194,31 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public PageResponse<?> listSkuByProductId(Long productId, int page, int size) {
+        log.info("Service: get sku list with product id {} size {}, page {}", productId, size, page);
+        Product product = findProductById(productId);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Sku> skuPage = skuRepository.findAllByProduct(product, pageable);
+        List<SkuResponse> responses = skuPage.stream()
+                .map(sku -> SkuResponse.builder()
+                        .skuNo(sku.getSkuNo())
+                        .skuName(sku.getSkuName())
+                        .skuDescription(sku.getSkuDescription())
+                        .skuPrice(sku.getSkuPrice())
+                        .skuStock(sku.getSkuStock())
+                        .isDefault(sku.isDefault())
+                        .build())
+                .toList();
+        return PageResponse.builder()
+                .page(pageable.getPageNumber())
+                .size(skuPage.getSize())
+                .total(skuPage.getTotalElements())
+                .items(responses)
+                .build();
+    }
+
+
+    @Override
     public boolean publishProduct(Long shopId, Long productId) {
         checkShopId(shopId);
         Product product = findProductById(productId);
@@ -214,6 +238,24 @@ public class ProductServiceImpl implements ProductService {
         product.setDraft(true);
         productRepository.save(product);
         return true;
+    }
+
+    @Override
+    public SkuResponse skuDetails(Long productId, Long skuId) {
+        Product product = findProductById(productId);
+        List<Sku> skuList = skuRepository.findAllByProduct(product);
+        Sku sku = skuRepository.findById(skuId).orElseThrow(()-> new AppException(ErrorCode.SKU_NOT_FOUND));
+        if (!skuList.contains(sku)) {
+            throw new AppException(ErrorCode.SKU_INCOMPATIBLE_PRODUCT);
+        }
+        return SkuResponse.builder()
+                .skuNo(sku.getSkuNo())
+                .skuName(sku.getSkuName())
+                .skuDescription(sku.getSkuDescription())
+                .skuPrice(sku.getSkuPrice())
+                .skuStock(sku.getSkuStock())
+                .isDefault(sku.isDefault())
+                .build();
     }
 
     @Override
@@ -240,7 +282,7 @@ public class ProductServiceImpl implements ProductService {
                 .items(responses)
                 .build();
     }
-    private void checkShopId(Long shopId) {
+    public void checkShopId(Long shopId) {
         log.info("Service: Checking shop id for shop {}", shopId);
         if (!userRepository.existsById(shopId)) {
             log.error("Service: Shop with id {} not found", shopId);

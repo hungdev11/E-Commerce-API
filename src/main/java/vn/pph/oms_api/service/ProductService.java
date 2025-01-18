@@ -6,23 +6,21 @@ import vn.pph.oms_api.dto.request.ProductCreationRequest;
 import vn.pph.oms_api.dto.response.PageResponse;
 import vn.pph.oms_api.dto.response.ProductCreationResponse;
 import vn.pph.oms_api.dto.response.ProductResponse;
+import vn.pph.oms_api.dto.response.SkuResponse;
 import vn.pph.oms_api.model.sku.Product;
-
-import java.util.List;
 
 public interface ProductService {
       ProductCreationResponse addProduct(ProductCreationRequest product);
       ProductResponse getProductById(Long productId);
       /**
-       * skuDetails(Long productId, Long sku_id)
-       * List<SkuResponse> listSkuByProductId(product_id, limit, offset
        * searchProduct(String keySearch)
        */
       PageResponse<?> convertToPageResponse(Page<Product> productPage, Pageable pageable);
       PageResponse<?> getAllProductsOfShop(Long shopId, int page, int size, String sortBy, String direction);
       PageResponse<?> productDraftList(Long shopId, int page, int size);
       PageResponse<?> productPublishList(Long shopId, int page, int size);
+      PageResponse<?> listSkuByProductId(Long productId, int page, int size);
       boolean publishProduct(Long shopId, Long productId);
       boolean unPublishProduct(Long shopId, Long productId);
-//    //ProductResponse getProductsByName(String productName);
+      SkuResponse skuDetails(Long productId, Long skuId);
 }

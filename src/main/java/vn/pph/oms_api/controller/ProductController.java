@@ -21,6 +21,7 @@ import java.util.List;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class ProductController {
     ProductService productService;
+
     @PostMapping("/")
     public ApiResponse<?> addNewProduct(@RequestBody ProductCreationRequest request) {
         log.info("Controller: add product");
@@ -30,6 +31,7 @@ public class ProductController {
                 .data(productService.addProduct(request))
                 .build();
     }
+
     @GetMapping("/{productId}")
     public ApiResponse<ProductResponse> getProductById(@PathVariable Long productId) {
         log.info("Controller: get product with id {}", productId);
@@ -39,15 +41,7 @@ public class ProductController {
                 .data(productService.getProductById(productId))
                 .build();
     }
-////    @GetMapping("/{productName}")
-////    public ApiResponse<ProductResponse> searchProductsByName(@PathVariable String productName) {
-////        log.info("Controller: search products with name {}", productName);
-////        return ApiResponse.<ProductResponse>builder()
-////                .code(200)
-////                .message("Get product successfully")
-////                .data(productService.getProductsByName(productName))
-////                .build();
-////    }
+
     @GetMapping("/")
     public PageResponse<?> getProductList(
             @RequestParam Long shopId,
@@ -66,8 +60,7 @@ public class ProductController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "3") int size) {
         log.info("Controller: get draft products for shop {}", shopId);
-        PageResponse<?> response = productService.productDraftList(shopId, page, size);
-        return response;
+        return productService.productDraftList(shopId, page, size);
     }
 
     // Lấy danh sách sản phẩm Publish
@@ -77,8 +70,7 @@ public class ProductController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "3") int size) {
         log.info("Controller: get published products for shop {}", shopId);
-        PageResponse<?> response = productService.productPublishList(shopId, page, size);
-        return response;
+        return productService.productPublishList(shopId, page, size);
     }
 
     // Chuyển sản phẩm sang trạng thái Publish
@@ -107,4 +99,22 @@ public class ProductController {
                 .build();
     }
 
+    @GetMapping("/sku-list")
+    public PageResponse<?> getSkusOfProduct(
+            @RequestParam Long productId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "3") int size) {
+        log.info("Controller: get sku list by product id {}", productId);
+        return productService.listSkuByProductId(productId, page, size);
+    }
+
+    @GetMapping("sku-details")
+    public ApiResponse<?> skuDetailsByProductId(@RequestParam Long productId, @RequestParam Long skuId) {
+        log.info("Controller: get sku details with product id {}, sku id {}", productId, skuId);
+        return ApiResponse.builder()
+                .message("Get sku details successfully")
+                .data(productService.skuDetails(productId, skuId))
+                .code(200)
+                .build();
+    }
 }
