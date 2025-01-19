@@ -28,6 +28,9 @@ public enum ErrorCode {
     INVALID_DISCOUNT_QUANTITY(1400, "Maximum quantity must be greater than max discount user can use", HttpStatus.BAD_REQUEST),
     DISCOUNT_EXISTED(1401, "Shop already has that discount code", HttpStatus.BAD_REQUEST),
     PRODUCT_NOT_BELONG_TO_SHOP(1402, "Some product not belong to shop", HttpStatus.BAD_REQUEST),
+    INVALID_PERCENT_VALUE(1403, "Percent must in [0, 100]", HttpStatus.BAD_REQUEST),
+    DISCOUNT_NOT_FOUND(1404, "Discount code doesn't exists", HttpStatus.BAD_REQUEST),
+    DISCOUNT_INACTIVE(1405, "Discount code is inactive user can't see it", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;

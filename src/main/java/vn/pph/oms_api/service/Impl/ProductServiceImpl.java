@@ -14,6 +14,7 @@ import vn.pph.oms_api.dto.response.ProductResponse;
 import vn.pph.oms_api.dto.response.SkuResponse;
 import vn.pph.oms_api.exception.AppException;
 import vn.pph.oms_api.exception.ErrorCode;
+import vn.pph.oms_api.model.Discount;
 import vn.pph.oms_api.model.sku.Attribute;
 import vn.pph.oms_api.model.sku.AttributeValue;
 import vn.pph.oms_api.model.sku.Product;
@@ -21,7 +22,10 @@ import org.springframework.stereotype.Service;
 import vn.pph.oms_api.model.sku.Sku;
 import vn.pph.oms_api.repository.*;
 import vn.pph.oms_api.service.ProductService;
+import vn.pph.oms_api.utils.DiscountApplyTo;
+import vn.pph.oms_api.utils.DiscountStatus;
 import vn.pph.oms_api.utils.ProductUtils;
+import vn.pph.oms_api.utils.Utils;
 
 import java.util.*;
 
@@ -30,6 +34,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class ProductServiceImpl implements ProductService {
+    private final DiscountRepository discountRepository;
     UserRepository userRepository;
     AttributeRepository attributeRepository;
     ProductRepository productRepository;
@@ -256,6 +261,30 @@ public class ProductServiceImpl implements ProductService {
                 .skuStock(sku.getSkuStock())
                 .isDefault(sku.isDefault())
                 .build();
+    }
+
+    @Override
+    public PageResponse<?> getProductListByDiscountCode(String discountCode, Long shopId, int page, int size) {
+        Discount discount = discountRepository.findByCode(discountCode).orElseThrow(() -> new AppException(ErrorCode.DISCOUNT_NOT_FOUND));
+        if (discount.getStatus().equals(DiscountStatus.INACTIVE)) {
+            log.info("User can't see product list with discount code is inactive");
+            throw new AppException(ErrorCode.DISCOUNT_INACTIVE);
+        }
+        if (discount.getApplyTo().equals(DiscountApplyTo.ALL)) {
+            log.info("Discount apply to all products of shop {}", shopId);
+            return productPublishList(shopId, page, size);
+        } else if (discount.getApplyTo().equals(DiscountApplyTo.SPECIFIC)) {
+            log.info("Discount apply to specific shop {}", shopId);
+            Pageable pageable = PageRequest.of(page, size);
+            List<Product> products = discount.getProductIds().stream()
+                    .map(this::findProductById)
+                    .filter(p -> p.isPublish())
+                    .toList();
+            return convertToPageResponse(Utils.convertListToPage(products, pageable), pageable);
+        } else {
+            log.info("Discount is apply to something unknown");
+            throw new AppException(ErrorCode.SOME_THING_WENT_WRONG);
+        }
     }
 
     @Override

@@ -3,19 +3,19 @@ package vn.pph.oms_api.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import vn.pph.oms_api.dto.request.DiscountCreationRequest;
 import vn.pph.oms_api.dto.response.ApiResponse;
 import vn.pph.oms_api.dto.response.DiscountCreationResponse;
+import vn.pph.oms_api.dto.response.DiscountResponse;
+import vn.pph.oms_api.dto.response.PageResponse;
 import vn.pph.oms_api.service.DiscountService;
+import vn.pph.oms_api.utils.DiscountStatus;
 
 @RequiredArgsConstructor
 @RestController
 @Slf4j
-@RequestMapping("/discount")
+@RequestMapping("/discounts")
 public class DiscountController {
     private final DiscountService discountService;
 
@@ -27,5 +27,15 @@ public class DiscountController {
                 .code(201)
                 .data(discountService.createNewDiscount(request))
                 .build();
+    }
+    @GetMapping("/for-shop")
+    public PageResponse<?> getAllDiscountsForShop(
+            @RequestParam Long shopId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "3") int size,
+            @RequestParam(defaultValue = "ACTIVE") DiscountStatus discountStatus)
+    {
+        log.info("Controller: get all discount {} of shop id {}", discountStatus, shopId);
+        return discountService.getAllDiscountsForShop(shopId, page, size, discountStatus);
     }
 }
