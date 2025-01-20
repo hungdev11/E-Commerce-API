@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.pph.oms_api.model.Discount;
-import vn.pph.oms_api.model.sku.Product;
 import vn.pph.oms_api.utils.DiscountStatus;
 
 import java.util.Optional;

@@ -8,12 +8,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.pph.oms_api.dto.request.DiscountCreationRequest;
+import vn.pph.oms_api.dto.request.MockProductOrder;
+import vn.pph.oms_api.dto.request.RequestGetAmountDiscount;
+import vn.pph.oms_api.dto.response.AmountRequest;
 import vn.pph.oms_api.dto.response.DiscountCreationResponse;
 import vn.pph.oms_api.dto.response.DiscountResponse;
 import vn.pph.oms_api.dto.response.PageResponse;
 import vn.pph.oms_api.exception.AppException;
 import vn.pph.oms_api.exception.ErrorCode;
 import vn.pph.oms_api.model.Discount;
+import vn.pph.oms_api.model.User;
 import vn.pph.oms_api.model.sku.Product;
 import vn.pph.oms_api.repository.DiscountRepository;
 import vn.pph.oms_api.repository.ProductRepository;
@@ -23,8 +27,11 @@ import vn.pph.oms_api.utils.DiscountApplyTo;
 import vn.pph.oms_api.utils.DiscountStatus;
 import vn.pph.oms_api.utils.DiscountType;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -161,4 +168,70 @@ public class DiscountServiceImp implements DiscountService {
                 .items(responses)
                 .build();
     }
+
+    @Override
+    @Transactional // Not yet check prices in db to compare prices FE send, just calculate based on FE's prices
+    public AmountRequest getDiscountAmount(RequestGetAmountDiscount request) {
+        // check user
+        User user = userRepository.findById(request.getUserId()).orElseThrow(()-> new AppException(ErrorCode.USER_NOT_FOUND));
+        Discount discount = discountRepository.findByCode(request.getCode()).orElseThrow(() -> new AppException(ErrorCode.DISCOUNT_NOT_FOUND));
+        // check date
+        if (discount.getStartDate().isAfter(LocalDateTime.now())
+                || discount.getEndDate().isBefore(LocalDateTime.now())
+                || discount.getStatus().equals(DiscountStatus.INACTIVE)
+        ){
+            log.info("Can not use this code anymore, cuz it out of time");
+            throw new AppException(ErrorCode.CANNOT_USE_DISCOUNT);
+        }
+        // check discount quantity
+        int maxQuantity = discount.getMaximumQuantity();
+        if (maxQuantity == 0) {
+            log.info("Can not use this code anymore, cuz it out of quantity");
+            throw new AppException(ErrorCode.DISCOUNT_OUT_OF_QUANTITY);
+        }
+        // check discount per user can use
+        long usedTimes = discount.getUsersUsed().stream().filter(u -> Objects.equals(user.getId(), u.getId())).count();
+        log.info("This user use this discount code {} times", usedTimes);
+        if (discount.getMaxPerUser() <= usedTimes) {
+            log.info("Can not use this code anymore, cuz user use so many times");
+            throw new AppException(ErrorCode.DISCOUNT_OUT_OF_QUANTITY);
+        }
+        // check is order: is product of that shop can apply discount, check total is enough
+        List<MockProductOrder> productOrders = request.getProductOrders();
+        BigDecimal totalOfOrder = productOrders.stream()
+                .reduce(
+                        BigDecimal.ZERO,
+                        (sum, order) -> sum.add(order.getPrice().multiply(new BigDecimal(order.getQuantity()))),
+                        BigDecimal::add
+                );
+        List<MockProductOrder> canApplyDiscount = productOrders.stream()
+                .filter(p -> discount.getProductIds().contains(p.getProductId()))
+                .toList();
+        BigDecimal totalOfProductCanApplyDiscount = canApplyDiscount.stream()
+                .reduce(
+                        BigDecimal.ZERO,
+                        (sum, order) -> sum.add(order.getPrice().multiply(new BigDecimal(order.getQuantity()))),
+                        BigDecimal::add
+                );
+        BigDecimal totalApplied = BigDecimal.ZERO;
+        if (discount.getMinOrderValue().compareTo(totalOfProductCanApplyDiscount) <= 0) {
+            if (discount.getType().equals(DiscountType.FIX_AMOUNT)) {
+                totalApplied = totalOfProductCanApplyDiscount.subtract(discount.getValue());
+            } else {
+                BigDecimal discountRate = BigDecimal.ONE.subtract(discount.getValue().divide(BigDecimal.valueOf(100)));
+                totalApplied = totalOfProductCanApplyDiscount.multiply(discountRate);
+            }
+        }
+        discount.getUsersUsed().add(user);
+        discount.setMaximumQuantity(maxQuantity - 1);
+        discountRepository.save(discount);
+        return AmountRequest.builder()
+                .userId(user.getId())
+                .originPrice(totalOfOrder)
+                .discountPrice(totalApplied.compareTo(BigDecimal.ZERO) == 0
+                        ? BigDecimal.ZERO
+                        : totalOfOrder.subtract(totalOfProductCanApplyDiscount).add(totalApplied))
+                .build();
+    }
+
 }

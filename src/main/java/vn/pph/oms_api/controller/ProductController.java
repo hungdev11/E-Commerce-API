@@ -120,7 +120,6 @@ public class ProductController {
 
     @GetMapping("products-discount-with-code")
     public ApiResponse<?> getProductsByDiscountCode(
-            @RequestParam Long shopId,
             @RequestParam String discountCode,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "3") int size
@@ -128,7 +127,7 @@ public class ProductController {
         log.info("Controller: get products is apply by code {}", discountCode);
         return ApiResponse.builder()
                 .message("Get product successfully")
-                .data(productService.getProductListByDiscountCode(discountCode, shopId, page, size))
+                .data(productService.getProductListByDiscountCode(discountCode, page, size))
                 .code(200)
                 .build();
     }

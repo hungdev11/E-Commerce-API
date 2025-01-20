@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import vn.pph.oms_api.dto.request.DiscountCreationRequest;
+import vn.pph.oms_api.dto.request.RequestGetAmountDiscount;
 import vn.pph.oms_api.dto.response.ApiResponse;
 import vn.pph.oms_api.dto.response.DiscountCreationResponse;
 import vn.pph.oms_api.dto.response.DiscountResponse;
@@ -38,4 +39,16 @@ public class DiscountController {
         log.info("Controller: get all discount {} of shop id {}", discountStatus, shopId);
         return discountService.getAllDiscountsForShop(shopId, page, size, discountStatus);
     }
+
+    @PostMapping("/get-discount-amount")
+    public ApiResponse<?> getDiscountAmount(@RequestBody RequestGetAmountDiscount requestGetAmountDiscount)
+    {
+        log.info("Controller: get amount value of user's order");
+        return ApiResponse.builder()
+                .data(discountService.getDiscountAmount(requestGetAmountDiscount))
+                .code(200)
+                .message("OK")
+                .build();
+    }
+
 }

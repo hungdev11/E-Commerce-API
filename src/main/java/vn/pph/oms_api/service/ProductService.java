@@ -23,5 +23,5 @@ public interface ProductService {
       boolean publishProduct(Long shopId, Long productId);
       boolean unPublishProduct(Long shopId, Long productId);
       SkuResponse skuDetails(Long productId, Long skuId);
-      PageResponse<?> getProductListByDiscountCode(String discountCode, Long shopId, int page, int size);
+      PageResponse<?> getProductListByDiscountCode(String discountCode, int page, int size);
 }

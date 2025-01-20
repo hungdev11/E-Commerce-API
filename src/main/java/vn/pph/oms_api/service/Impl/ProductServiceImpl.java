@@ -227,6 +227,9 @@ public class ProductServiceImpl implements ProductService {
     public boolean publishProduct(Long shopId, Long productId) {
         checkShopId(shopId);
         Product product = findProductById(productId);
+        if (Long.compare(shopId, product.getProductShopId()) != 0) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_BELONG_TO_SHOP);
+        }
         log.info("Publishing product id {}", productId);
         product.setPublish(true);
         product.setDraft(false);
@@ -238,6 +241,9 @@ public class ProductServiceImpl implements ProductService {
     public boolean unPublishProduct(Long shopId, Long productId) {
         checkShopId(shopId);
         Product product = findProductById(productId);
+        if (Long.compare(shopId, product.getProductShopId()) != 0) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_BELONG_TO_SHOP);
+        }
         log.info("Drafting product id {}", productId);
         product.setPublish(false);
         product.setDraft(true);
@@ -264,17 +270,18 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public PageResponse<?> getProductListByDiscountCode(String discountCode, Long shopId, int page, int size) {
+    public PageResponse<?> getProductListByDiscountCode(String discountCode, int page, int size) {
         Discount discount = discountRepository.findByCode(discountCode).orElseThrow(() -> new AppException(ErrorCode.DISCOUNT_NOT_FOUND));
         if (discount.getStatus().equals(DiscountStatus.INACTIVE)) {
             log.info("User can't see product list with discount code is inactive");
             throw new AppException(ErrorCode.DISCOUNT_INACTIVE);
         }
         if (discount.getApplyTo().equals(DiscountApplyTo.ALL)) {
+            Long shopId = discount.getShopId();
             log.info("Discount apply to all products of shop {}", shopId);
             return productPublishList(shopId, page, size);
         } else if (discount.getApplyTo().equals(DiscountApplyTo.SPECIFIC)) {
-            log.info("Discount apply to specific shop {}", shopId);
+            log.info("Discount apply to specific products");
             Pageable pageable = PageRequest.of(page, size);
             List<Product> products = discount.getProductIds().stream()
                     .map(this::findProductById)

@@ -31,6 +31,8 @@ public enum ErrorCode {
     INVALID_PERCENT_VALUE(1403, "Percent must in [0, 100]", HttpStatus.BAD_REQUEST),
     DISCOUNT_NOT_FOUND(1404, "Discount code doesn't exists", HttpStatus.BAD_REQUEST),
     DISCOUNT_INACTIVE(1405, "Discount code is inactive user can't see it", HttpStatus.BAD_REQUEST),
+    DISCOUNT_OUT_OF_QUANTITY(1406, "Discount code is out of quantity", HttpStatus.BAD_REQUEST),
+    CANNOT_USE_DISCOUNT(1407, "Discount time out", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;
