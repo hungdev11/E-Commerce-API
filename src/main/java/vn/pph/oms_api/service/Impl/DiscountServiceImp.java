@@ -222,9 +222,10 @@ public class DiscountServiceImp implements DiscountService {
                 totalApplied = totalOfProductCanApplyDiscount.multiply(discountRate);
             }
         }
-        discount.getUsersUsed().add(user);
-        discount.setMaximumQuantity(maxQuantity - 1);
-        discountRepository.save(discount);
+        // its just check amount, not pay yet
+//        discount.getUsersUsed().add(user);
+//        discount.setMaximumQuantity(maxQuantity - 1);
+//        discountRepository.save(discount);
         return AmountRequest.builder()
                 .userId(user.getId())
                 .originPrice(totalOfOrder)
@@ -233,5 +234,8 @@ public class DiscountServiceImp implements DiscountService {
                         : totalOfOrder.subtract(totalOfProductCanApplyDiscount).add(totalApplied))
                 .build();
     }
+
+    // delete discount (admin/shop)
+    //cancel discount (user)
 
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
     boolean existsByProductName(String name);
+    boolean existsByProductShopId(Long shopId);
     Page<Product> findAllByProductShopId (Long shopId, Pageable pageable);
     @Query("SELECT p FROM Product p WHERE p.productShopId = :shopId AND " +
             "(:isDraft IS NOT NULL AND p.isDraft = :isDraft) AND " +
