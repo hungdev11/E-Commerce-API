@@ -12,4 +12,6 @@ public interface DiscountService {
     DiscountCreationResponse createNewDiscount(DiscountCreationRequest request);
     PageResponse<?> getAllDiscountsForShop(Long shopId, int page, int size, DiscountStatus status);
     AmountRequest getDiscountAmount(RequestGetAmountDiscount request);
+    boolean deleteDiscount(Long shopId, Long codeId);
+    boolean cancelDiscount(Long shopId, Long codeId, Long userId);
 }

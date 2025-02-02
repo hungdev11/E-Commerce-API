@@ -30,6 +30,7 @@ import vn.pph.oms_api.utils.DiscountType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -235,7 +236,48 @@ public class DiscountServiceImp implements DiscountService {
                 .build();
     }
 
-    // delete discount (admin/shop)
+    // delete discount (*admin/shop)
+    @Override
+    @Transactional
+    public boolean deleteDiscount(Long shopId, Long codeId) {
+        Discount discount = discountRepository.findById(codeId).orElseThrow(()-> new AppException(ErrorCode.DISCOUNT_NOT_FOUND));
+        if (!discount.getUsersUsed().isEmpty()) {
+            throw new AppException(ErrorCode.DISCOUNT_HAS_USED);
+        }
+        // check code belongs to shop
+        if (!discount.getShopId().equals(shopId)) {
+            throw new AppException(ErrorCode.DISCOUNT_NOT_BELONG_TO_SHOP);
+        }
+        discount.setDiscountDeleted(true);
+        return discountRepository.save(discount).isDiscountDeleted();
+    }
+
     //cancel discount (user)
+    @Override
+    public boolean cancelDiscount(Long shopId, Long codeId, Long userId) {
+        // Fetch user and discount, throwing an exception if not found
+        userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        Discount discount = discountRepository.findById(codeId)
+                .orElseThrow(() -> new AppException(ErrorCode.DISCOUNT_NOT_FOUND));
+
+        if (!discount.getShopId().equals(shopId)) {
+            throw new AppException(ErrorCode.DISCOUNT_NOT_BELONG_TO_SHOP);
+        }
+        // Increase available discount quantity
+        discount.setMaximumQuantity(discount.getMaximumQuantity() + 1);
+
+        // Remove user from the discount's used list (only one occurrence)
+        List<User> allUsers = discount.getUsersUsed();
+        for (int i = allUsers.size() - 1; i >= 0; i--) {
+            if (allUsers.get(i).getId().equals(userId)) {
+                allUsers.remove(i); // Xóa lần gần nhất
+                break; // Dừng ngay sau khi xóa
+            }
+        }
+        discountRepository.save(discount);
+        return true; // Indicate successful cancellation
+    }
 
 }

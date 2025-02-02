@@ -69,6 +69,10 @@ public class Discount extends BaseEntity{
     @Builder.Default
     private DiscountApplyTo applyTo = DiscountApplyTo.ALL;
 
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private boolean isDiscountDeleted = false;
+
     @Column(name = "products_apply", nullable = false)
     @Builder.Default
     List<Long> productIds = new ArrayList<>();
