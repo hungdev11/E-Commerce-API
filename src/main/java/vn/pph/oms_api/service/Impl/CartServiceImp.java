@@ -68,8 +68,12 @@ public class CartServiceImp implements CartService {
                     log.error("Cart not found for user {}", request.getUserId());
                     return new AppException(ErrorCode.CART_NOT_FOUND);
                 });
-
         Long productId = request.getProductId();
+        if (!checkProductOfShop(productId, request.getShopId())) {
+            log.error("Product {} not belong to shop {}", productId, request.getShopId());
+            throw new AppException(ErrorCode.PRODUCT_NOT_BELONG_TO_SHOP);
+        }
+
         Optional<CartProduct> existingProductOpt = cart.getProducts().stream()
                 .filter(product -> product.getProductId().equals(productId))
                 .findFirst();
@@ -118,38 +122,43 @@ public class CartServiceImp implements CartService {
 
         for (OrderShop shop : productsShop) {
             for (CartItem item : shop.getItems()) {
-                log.info("Processing productId {} from shopId {}", item.getProductId(), shop.getShopId());
-                Product product = productRepository.findById(item.getProductId())
-                        .orElseThrow(() -> {
-                            log.error("Product not found for productId {}", item.getProductId());
-                            return new AppException(ErrorCode.PRODUCT_NOT_FOUND);
-                        });
-
-                if (!product.getProductShopId().equals(shop.getShopId())) {
-                    log.error("Product {} does not belong to shop {}", item.getProductId(), shop.getShopId());
+                if (!checkProductOfShop(item.getProductId(), shop.getShopId())) {
+                    log.error("Product {} not belong to shop {}", item.getProductId(), shop.getShopId());
                     throw new AppException(ErrorCode.PRODUCT_NOT_BELONG_TO_SHOP);
                 }
-
-                CartProduct cartProduct = cartProducts.stream()
+                Optional<CartProduct> cartProductOpt = cartProducts.stream()
                         .filter(cp -> cp.getProductId().equals(item.getProductId()))
-                        .findFirst()
-                        .orElseThrow(() -> {
-                            log.error("Product {} not found in cart for shop {}", item.getProductId(), shop.getShopId());
-                            return new AppException(ErrorCode.PRODUCT_NOT_FOUND);
-                        });
-
-                int diffQuantity = item.getNewQuantity() - item.getOldQuantity();
-                if (diffQuantity != 0) {
-                    cartProduct.setQuantity(cartProduct.getQuantity() + diffQuantity);
-                    if (cartProduct.getQuantity() <= 0) {
-                        log.info("Removing product {} from cart due to zero quantity", cartProduct.getProductId());
-                        cartProducts.remove(cartProduct);
-                        cartProductRepository.delete(cartProduct);
-                        cart.setCartCount(cart.getCartCount() - 1);
-                    }
+                        .findFirst();
+                if (!cartProductOpt.isPresent() && item.getNewQuantity() > 0) {
+                    log.info("Update new product {}", item.getProductId());
                     updatedShopId = shop.getShopId();
                     updatedProductId = item.getProductId();
-                    updatedQuantity = cartProduct.getQuantity();
+                    updatedQuantity = item.getNewQuantity();
+                    addProductToCart(ProductAddToCartRequest.builder()
+                            .productId(updatedProductId)
+                            .quantity(updatedQuantity)
+                            .shopId(updatedShopId)
+                            .userId(cartRepository.findById(request.getCartId()).get().getUserId())
+                            .build());
+                } else if (cartProductOpt.isPresent()) {
+                    log.info("Update existed product {} in cart", item.getProductId());
+                    CartProduct cartProduct = cartProductOpt.get();
+                    if (item.getOldQuantity() != cartProduct.getQuantity()) {
+                        log.error("Quantity in request not consistence with product cart quantity {} {}", item.getOldQuantity(), cartProduct.getQuantity());
+                        throw new AppException(ErrorCode.INCONSISTENCY);
+                    }
+                    int diffQuantity = item.getNewQuantity() - item.getOldQuantity();
+                    if (diffQuantity != 0) {
+                        cartProduct.setQuantity(cartProduct.getQuantity() + diffQuantity);
+                        if (cartProduct.getQuantity() <= 0) {
+                            log.info("Removing product {} from cart due to zero quantity", cartProduct.getProductId());
+                            cartProducts.remove(cartProduct);
+                            cart.setCartCount(cart.getCartCount() - 1);
+                        }
+                        updatedShopId = shop.getShopId();
+                        updatedProductId = item.getProductId();
+                        updatedQuantity = cartProduct.getQuantity();
+                    }
                 }
             }
         }
@@ -214,15 +223,14 @@ public class CartServiceImp implements CartService {
             log.error("Cart {} not found for userId {}", cartId, userId);
             throw new AppException(ErrorCode.CART_NOT_FOUND);
         }
-        for (CartProduct cp : cart.getProducts()) {
-            cartProductRepository.delete(cp);
-        }
+        cart.getProducts().clear(); // Removes all cartProducts correctly
         cart.setCartCount(0);
-        cart.setProducts(new ArrayList<>());
         cartRepository.save(cart);
+
         log.info("Cart {} successfully deleted for userId {}", cartId, userId);
         return CartResponse.builder().orderShops(List.of()).userId(userId).build();
     }
+
 
     @Override
     public CartResponse deleteCartItem(Long userId, Long cartId, Long shopId, Long productId) {
@@ -263,6 +271,7 @@ public class CartServiceImp implements CartService {
     }
 
     private boolean checkProductOfShop(Long productId, Long shopId) {
+        log.info("Processing productId {} from shopId {}", productId, shopId);
         userRepository.findById(shopId).orElseThrow(()-> new AppException(ErrorCode.USER_NOT_FOUND));
         return productRepository.findById(productId)
                 .orElseThrow(()-> new AppException(ErrorCode.PRODUCT_NOT_FOUND))

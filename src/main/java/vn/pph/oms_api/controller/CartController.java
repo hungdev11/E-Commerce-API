@@ -1,5 +1,6 @@
 package vn.pph.oms_api.controller;
 
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -21,7 +22,7 @@ public class CartController {
     CartService cartService;
 
     @PostMapping("/add-product")
-    public ApiResponse<?> addProductToCart(@RequestBody ProductAddToCartRequest request) {
+    public ApiResponse<?> addProductToCart(@Valid @RequestBody ProductAddToCartRequest request) {
         log.info("Controller: add new product to cart of user {}", request.getUserId());
         cartService.addProductToCart(request);
         return ApiResponse.builder()

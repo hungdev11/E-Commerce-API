@@ -15,6 +15,6 @@ public class CartProduct extends BaseEntity{
     private Long shopId;
     private int quantity;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne()
     private Cart cart; // Linking CartProduct to Cart entity
 }

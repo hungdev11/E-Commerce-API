@@ -1,9 +1,6 @@
 package vn.pph.oms_api.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 import vn.pph.oms_api.utils.CartStatus;
 
@@ -18,7 +15,7 @@ import java.util.List;
 @Setter
 @Entity
 public class Cart extends BaseEntity {
-    @OneToMany(mappedBy = "cart")
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     @Column(nullable = false)
     @Builder.Default
     private List<CartProduct> products = new ArrayList<>();

@@ -36,6 +36,7 @@ public enum ErrorCode {
     CANNOT_USE_DISCOUNT(1408, "Discount time out", HttpStatus.BAD_REQUEST),
     DISCOUNT_NOT_BELONG_TO_SHOP(1409, "Shop don't have that discount", HttpStatus.BAD_REQUEST),
     CART_NOT_FOUND(1408, "Can not find cart", HttpStatus.BAD_REQUEST),
+    INCONSISTENCY(1409, "Two value are in-consistence", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;
