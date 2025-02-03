@@ -1,4 +1,4 @@
-package vn.pph.oms_api.dto.request;
+package vn.pph.oms_api.dto.response;
 
 import lombok.*;
 
@@ -10,7 +10,7 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-public class OrderShop {
+public class OrderByShop {
     private Long shopId;
-    public List<CartItem> items;
+    List<ShopItem> shopItems;
 }

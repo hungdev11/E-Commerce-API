@@ -7,6 +7,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vn.pph.oms_api.dto.request.RefreshTokenRequest;
 import vn.pph.oms_api.dto.request.UserLogOutRequest;
@@ -22,6 +23,7 @@ import vn.pph.oms_api.model.User;
 import vn.pph.oms_api.repository.TokenRepository;
 import vn.pph.oms_api.repository.UserRepository;
 import vn.pph.oms_api.service.AuthenticationService;
+import vn.pph.oms_api.service.CartService;
 import vn.pph.oms_api.utils.Role;
 import vn.pph.oms_api.utils.TokenUtils;
 import vn.pph.oms_api.utils.UserStatus;
@@ -38,8 +40,10 @@ public class AuthenticationServiceImp implements AuthenticationService {
     TokenRepository tokenRepository;
     UserRepository userRepository;
     PasswordEncoder passwordEncoder;
+    CartService cartService;
 
     @Override
+    @Transactional
     public SignUpResponse signUp(UserSignUpRequest request) {
         log.info("Starting user sign-up process for email: {}", request.getEmail());
 
@@ -278,7 +282,7 @@ public class AuthenticationServiceImp implements AuthenticationService {
                 .isVerify(true)
                 .roles(roles)
                 .build();
-        userRepository.save(user);
+        cartService.createCart(userRepository.save(user).getId());
         log.info("User with email {} saved successfully", request.getEmail());
         return user;
     }
