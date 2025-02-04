@@ -8,9 +8,11 @@ import vn.pph.oms_api.model.sku.Product;
 import vn.pph.oms_api.model.sku.Sku;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SkuRepository extends JpaRepository<Sku, Long> {
     Page<Sku> findAllByProduct(Product product, Pageable pageable);
     List<Sku> findAllByProduct(Product product);
+    Optional<Sku> findBySkuNo(String skuNo);
 }

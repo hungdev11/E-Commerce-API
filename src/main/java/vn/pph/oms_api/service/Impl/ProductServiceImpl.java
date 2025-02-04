@@ -34,7 +34,8 @@ import java.util.*;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class ProductServiceImpl implements ProductService {
-    private final DiscountRepository discountRepository;
+    ProductUtils productUtils;
+    DiscountRepository discountRepository;
     UserRepository userRepository;
     AttributeRepository attributeRepository;
     ProductRepository productRepository;
@@ -66,7 +67,7 @@ public class ProductServiceImpl implements ProductService {
                 .productThumb(productRequest.getProductThumb())
                 .productDesc(productRequest.getProductDesc())
                 .productShopId(productRequest.getShopId())
-                .slug(ProductUtils.convertProductNameToSlug(productRequest.getProductName()))
+                .slug(productUtils.convertProductNameToSlug(productRequest.getProductName()))
                 .skuList(new ArrayList<>())
                 .build();
 

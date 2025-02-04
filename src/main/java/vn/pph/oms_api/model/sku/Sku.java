@@ -6,8 +6,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import vn.pph.oms_api.model.BaseEntity;
+import vn.pph.oms_api.model.Inventory;
+import vn.pph.oms_api.model.ReservationItem;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -49,4 +52,8 @@ public class Sku extends BaseEntity {
 
     @OneToMany(mappedBy = "sku", cascade = CascadeType.ALL)
     private List<AttributeValue> valueList;
+
+    @OneToMany(mappedBy = "sku", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(nullable = false)
+    List<Inventory> inventories = new ArrayList<>();
 }

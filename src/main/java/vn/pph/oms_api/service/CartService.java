@@ -5,8 +5,6 @@ import vn.pph.oms_api.dto.request.ProductAddToCartRequest;
 import vn.pph.oms_api.dto.response.CartResponse;
 import vn.pph.oms_api.dto.response.CartUpdateResponse;
 
-import java.util.List;
-
 public interface CartService {
     void createCart(Long userId);
     void addProductToCart(ProductAddToCartRequest request);

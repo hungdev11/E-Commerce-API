@@ -3,7 +3,7 @@ package vn.pph.oms_api.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Table(name = "cart-product")
+@Table(name = "cart_product")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

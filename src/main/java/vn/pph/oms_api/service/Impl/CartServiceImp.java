@@ -22,6 +22,7 @@ import vn.pph.oms_api.repository.CartRepository;
 import vn.pph.oms_api.repository.ProductRepository;
 import vn.pph.oms_api.repository.UserRepository;
 import vn.pph.oms_api.service.CartService;
+import vn.pph.oms_api.utils.ProductUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class CartServiceImp implements CartService {
+    private final ProductUtils productUtils;
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
@@ -69,7 +71,7 @@ public class CartServiceImp implements CartService {
                     return new AppException(ErrorCode.CART_NOT_FOUND);
                 });
         Long productId = request.getProductId();
-        if (!checkProductOfShop(productId, request.getShopId())) {
+        if (!productUtils.checkProductOfShop(productId, request.getShopId())) {
             log.error("Product {} not belong to shop {}", productId, request.getShopId());
             throw new AppException(ErrorCode.PRODUCT_NOT_BELONG_TO_SHOP);
         }
@@ -122,7 +124,7 @@ public class CartServiceImp implements CartService {
 
         for (OrderShop shop : productsShop) {
             for (CartItem item : shop.getItems()) {
-                if (!checkProductOfShop(item.getProductId(), shop.getShopId())) {
+                if (!productUtils.checkProductOfShop(item.getProductId(), shop.getShopId())) {
                     log.error("Product {} not belong to shop {}", item.getProductId(), shop.getShopId());
                     throw new AppException(ErrorCode.PRODUCT_NOT_BELONG_TO_SHOP);
                 }
@@ -240,7 +242,7 @@ public class CartServiceImp implements CartService {
             log.error("Cart {} not found for userId {}", cartId, userId);
             throw new AppException(ErrorCode.CART_NOT_FOUND);
         }
-        if (!checkProductOfShop(productId, shopId)) {
+        if (!productUtils.checkProductOfShop(productId, shopId)) {
             log.error("Product {} does not belong to shop {}", productId, shopId);
             throw new AppException(ErrorCode.PRODUCT_NOT_BELONG_TO_SHOP);
         }
@@ -270,12 +272,6 @@ public class CartServiceImp implements CartService {
                 });
     }
 
-    private boolean checkProductOfShop(Long productId, Long shopId) {
-        log.info("Processing productId {} from shopId {}", productId, shopId);
-        userRepository.findById(shopId).orElseThrow(()-> new AppException(ErrorCode.USER_NOT_FOUND));
-        return productRepository.findById(productId)
-                .orElseThrow(()-> new AppException(ErrorCode.PRODUCT_NOT_FOUND))
-                .getProductShopId().equals(shopId);
-    }
+
 
 }
