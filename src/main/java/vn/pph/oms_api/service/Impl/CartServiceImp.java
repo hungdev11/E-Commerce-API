@@ -4,14 +4,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.pph.oms_api.dto.request.CartItem;
-import vn.pph.oms_api.dto.request.CartUpdateRequest;
-import vn.pph.oms_api.dto.request.OrderShop;
-import vn.pph.oms_api.dto.request.ProductAddToCartRequest;
-import vn.pph.oms_api.dto.response.CartResponse;
-import vn.pph.oms_api.dto.response.CartUpdateResponse;
-import vn.pph.oms_api.dto.response.OrderByShop;
-import vn.pph.oms_api.dto.response.ShopItem;
+import vn.pph.oms_api.dto.request.cart.CartItem;
+import vn.pph.oms_api.dto.request.cart.CartUpdateRequest;
+import vn.pph.oms_api.dto.request.cart.OrderShop;
+import vn.pph.oms_api.dto.request.product.ProductAddToCartRequest;
+import vn.pph.oms_api.dto.response.cart.CartResponse;
+import vn.pph.oms_api.dto.response.cart.CartUpdateResponse;
+import vn.pph.oms_api.dto.response.cart.OrderByShop;
+import vn.pph.oms_api.dto.response.cart.ShopItem;
 import vn.pph.oms_api.exception.AppException;
 import vn.pph.oms_api.exception.ErrorCode;
 import vn.pph.oms_api.model.Cart;
@@ -23,6 +23,7 @@ import vn.pph.oms_api.repository.ProductRepository;
 import vn.pph.oms_api.repository.UserRepository;
 import vn.pph.oms_api.service.CartService;
 import vn.pph.oms_api.utils.ProductUtils;
+import vn.pph.oms_api.utils.UserUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -37,6 +38,7 @@ public class CartServiceImp implements CartService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final CartProductRepository cartProductRepository;
+    private final UserUtils userUtils;
     /**
      * Call when user sign up
      * @param userId
@@ -178,7 +180,7 @@ public class CartServiceImp implements CartService {
     @Override
     public CartResponse products(Long userId) {
         log.info("Fetching cart details for userId {}", userId);
-        Cart userCart = checkCartOfUser(userId);
+        Cart userCart = userUtils.checkCartOfUser(userId);
         List<CartProduct> cartProducts = userCart.getProducts();
 
         if (cartProducts.isEmpty()) {
@@ -220,7 +222,7 @@ public class CartServiceImp implements CartService {
     @Override
     public CartResponse deleteCart(Long userId, Long cartId) {
         log.info("Deleting cart {} for userId {}", cartId, userId);
-        Cart cart = checkCartOfUser(userId);
+        Cart cart = userUtils.checkCartOfUser(userId);
         if (!cartId.equals(cart.getId())) {
             log.error("Cart {} not found for userId {}", cartId, userId);
             throw new AppException(ErrorCode.CART_NOT_FOUND);
@@ -237,7 +239,7 @@ public class CartServiceImp implements CartService {
     @Override
     public CartResponse deleteCartItem(Long userId, Long cartId, Long shopId, Long productId) {
         log.info("Deleting product {} from shop {} in cart {} for userId {}", productId, shopId, cartId, userId);
-        Cart cart = checkCartOfUser(userId);
+        Cart cart = userUtils.checkCartOfUser(userId);
         if (!cartId.equals(cart.getId())) {
             log.error("Cart {} not found for userId {}", cartId, userId);
             throw new AppException(ErrorCode.CART_NOT_FOUND);
@@ -257,21 +259,4 @@ public class CartServiceImp implements CartService {
         log.info("Product {} successfully removed from shop {} in cart {} for userId {}", productId, shopId, cartId, userId);
         return products(userId);
     }
-
-    private Cart checkCartOfUser(Long userId) {
-        log.info("Checking cart for userId {}", userId);
-        userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("User {} not found", userId);
-                    return new AppException(ErrorCode.USER_NOT_FOUND);
-                });
-        return cartRepository.findByUserId(userId)
-                .orElseThrow(() -> {
-                    log.error("Cart not found for userId {}", userId);
-                    return new AppException(ErrorCode.CART_NOT_FOUND);
-                });
-    }
-
-
-
 }

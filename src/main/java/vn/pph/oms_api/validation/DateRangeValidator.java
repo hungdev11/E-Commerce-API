@@ -2,8 +2,7 @@ package vn.pph.oms_api.validation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import vn.pph.oms_api.dto.request.DiscountCreationRequest;
-import vn.pph.oms_api.model.Discount;
+import vn.pph.oms_api.dto.request.discount.DiscountCreationRequest;
 
 public class DateRangeValidator implements ConstraintValidator <ValidDateRange, DiscountCreationRequest>{
     @Override

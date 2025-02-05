@@ -1,18 +1,19 @@
 package vn.pph.oms_api.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import vn.pph.oms_api.model.Order.Order;
 import vn.pph.oms_api.utils.Role;
 import vn.pph.oms_api.utils.UserStatus;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @Entity
-@Data
 @Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
@@ -26,4 +27,9 @@ public class User {
     UserStatus status;
     boolean isVerify;
     Set<String> roles;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @Column(nullable = false)
+    @Builder.Default
+    private List<Order> orders = new ArrayList<>();
 }

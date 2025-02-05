@@ -5,10 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import vn.pph.oms_api.dto.request.RefreshTokenRequest;
-import vn.pph.oms_api.dto.request.UserLogOutRequest;
-import vn.pph.oms_api.dto.request.UserSignInRequest;
-import vn.pph.oms_api.dto.request.UserSignUpRequest;
+import vn.pph.oms_api.dto.request.token.RefreshTokenRequest;
+import vn.pph.oms_api.dto.request.user.UserLogOutRequest;
+import vn.pph.oms_api.dto.request.user.UserSignInRequest;
+import vn.pph.oms_api.dto.request.user.UserSignUpRequest;
 import vn.pph.oms_api.dto.response.ApiResponse;
 import vn.pph.oms_api.service.AuthenticationService;
 

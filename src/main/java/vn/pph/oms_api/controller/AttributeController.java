@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import vn.pph.oms_api.dto.request.AttributeCreationRequest;
+import vn.pph.oms_api.dto.request.product.AttributeCreationRequest;
 import vn.pph.oms_api.dto.response.ApiResponse;
 import vn.pph.oms_api.service.AttributeService;
 

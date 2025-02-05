@@ -1,6 +1,6 @@
 package vn.pph.oms_api.controller;
 
-import vn.pph.oms_api.dto.request.ProductCreationRequest;
+import vn.pph.oms_api.dto.request.product.ProductCreationRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -8,10 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import vn.pph.oms_api.dto.response.ApiResponse;
 import vn.pph.oms_api.dto.response.PageResponse;
-import vn.pph.oms_api.dto.response.ProductResponse;
+import vn.pph.oms_api.dto.response.product.ProductResponse;
 import vn.pph.oms_api.service.ProductService;
-
-import java.util.List;
 
 
 @Slf4j

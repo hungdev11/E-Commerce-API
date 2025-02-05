@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import vn.pph.oms_api.dto.request.InventoryAddingRequest;
-import vn.pph.oms_api.dto.response.InventoryAddingResponse;
+import vn.pph.oms_api.dto.request.product.InventoryAddingRequest;
+import vn.pph.oms_api.dto.response.product.InventoryAddingResponse;
 import vn.pph.oms_api.exception.AppException;
 import vn.pph.oms_api.exception.ErrorCode;
 import vn.pph.oms_api.model.Inventory;
@@ -18,7 +18,6 @@ import vn.pph.oms_api.repository.SkuRepository;
 import vn.pph.oms_api.service.InventoryService;
 import vn.pph.oms_api.utils.ProductUtils;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service

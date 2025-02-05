@@ -6,11 +6,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import vn.pph.oms_api.dto.request.CartUpdateRequest;
-import vn.pph.oms_api.dto.request.ProductAddToCartRequest;
+import vn.pph.oms_api.dto.request.cart.CartUpdateRequest;
+import vn.pph.oms_api.dto.request.product.ProductAddToCartRequest;
 import vn.pph.oms_api.dto.response.ApiResponse;
-import vn.pph.oms_api.dto.response.CartResponse;
-import vn.pph.oms_api.dto.response.CartUpdateResponse;
+import vn.pph.oms_api.dto.response.cart.CartResponse;
+import vn.pph.oms_api.dto.response.cart.CartUpdateResponse;
 import vn.pph.oms_api.service.CartService;
 
 @Slf4j

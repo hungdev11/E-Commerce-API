@@ -2,8 +2,8 @@ package vn.pph.oms_api.service.Impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import vn.pph.oms_api.dto.request.AttributeCreationRequest;
-import vn.pph.oms_api.dto.response.AttributeResponse;
+import vn.pph.oms_api.dto.request.product.AttributeCreationRequest;
+import vn.pph.oms_api.dto.response.product.AttributeResponse;
 import vn.pph.oms_api.exception.AppException;
 import vn.pph.oms_api.exception.ErrorCode;
 import vn.pph.oms_api.model.sku.Attribute;

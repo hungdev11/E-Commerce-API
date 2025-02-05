@@ -1,10 +1,9 @@
 package vn.pph.oms_api.service;
 
-import org.springframework.stereotype.Service;
-import vn.pph.oms_api.dto.request.DiscountCreationRequest;
-import vn.pph.oms_api.dto.request.RequestGetAmountDiscount;
-import vn.pph.oms_api.dto.response.AmountRequest;
-import vn.pph.oms_api.dto.response.DiscountCreationResponse;
+import vn.pph.oms_api.dto.request.discount.DiscountCreationRequest;
+import vn.pph.oms_api.dto.request.discount.RequestGetAmountDiscount;
+import vn.pph.oms_api.dto.response.cart.AmountRequest;
+import vn.pph.oms_api.dto.response.discount.DiscountCreationResponse;
 import vn.pph.oms_api.dto.response.PageResponse;
 import vn.pph.oms_api.utils.DiscountStatus;
 

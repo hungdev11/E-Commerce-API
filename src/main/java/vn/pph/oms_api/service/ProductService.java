@@ -2,11 +2,11 @@ package vn.pph.oms_api.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import vn.pph.oms_api.dto.request.ProductCreationRequest;
+import vn.pph.oms_api.dto.request.product.ProductCreationRequest;
 import vn.pph.oms_api.dto.response.PageResponse;
-import vn.pph.oms_api.dto.response.ProductCreationResponse;
-import vn.pph.oms_api.dto.response.ProductResponse;
-import vn.pph.oms_api.dto.response.SkuResponse;
+import vn.pph.oms_api.dto.response.product.ProductCreationResponse;
+import vn.pph.oms_api.dto.response.product.ProductResponse;
+import vn.pph.oms_api.dto.response.product.SkuResponse;
 import vn.pph.oms_api.model.sku.Product;
 
 public interface ProductService {
