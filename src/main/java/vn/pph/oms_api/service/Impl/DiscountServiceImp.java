@@ -204,9 +204,16 @@ public class DiscountServiceImp implements DiscountService {
                         (sum, order) -> sum.add(order.getPrice().multiply(new BigDecimal(order.getQuantity()))),
                         BigDecimal::add
                 );
-        List<MockProductOrder> canApplyDiscount = productOrders.stream()
-                .filter(p -> discount.getProductIds().contains(p.getProductId()))
-                .toList();
+
+        List<MockProductOrder> canApplyDiscount;
+        if (discount.getApplyTo().equals(DiscountApplyTo.SPECIFIC)) {
+            canApplyDiscount = productOrders.stream()
+                    .filter(p -> discount.getProductIds().contains(p.getProductId()))
+                    .toList();
+        } else {
+            canApplyDiscount = productOrders;
+        }
+
         BigDecimal totalOfProductCanApplyDiscount = canApplyDiscount.stream()
                 .reduce(
                         BigDecimal.ZERO,
@@ -216,8 +223,10 @@ public class DiscountServiceImp implements DiscountService {
         BigDecimal totalApplied = BigDecimal.ZERO;
         if (discount.getMinOrderValue().compareTo(totalOfProductCanApplyDiscount) <= 0) {
             if (discount.getType().equals(DiscountType.FIX_AMOUNT)) {
+                log.info("Discount {} is fix amount", discount.getCode());
                 totalApplied = totalOfProductCanApplyDiscount.subtract(discount.getValue());
             } else {
+                log.info("Discount {} is percentage", discount.getCode());
                 BigDecimal discountRate = BigDecimal.ONE.subtract(discount.getValue().divide(BigDecimal.valueOf(100)));
                 totalApplied = totalOfProductCanApplyDiscount.multiply(discountRate);
             }
@@ -230,7 +239,7 @@ public class DiscountServiceImp implements DiscountService {
                 .userId(user.getId())
                 .originPrice(totalOfOrder)
                 .discountPrice(totalApplied.compareTo(BigDecimal.ZERO) == 0
-                        ? BigDecimal.ZERO
+                        ? totalOfOrder
                         : totalOfOrder.subtract(totalOfProductCanApplyDiscount).add(totalApplied))
                 .build();
     }

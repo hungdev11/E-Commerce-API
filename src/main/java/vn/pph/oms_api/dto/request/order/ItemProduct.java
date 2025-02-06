@@ -11,6 +11,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ItemProduct {
     private Long productId;
+    private String skuCode;
     private int quantity;
     private double price;
 }

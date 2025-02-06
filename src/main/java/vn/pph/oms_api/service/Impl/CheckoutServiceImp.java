@@ -16,12 +16,15 @@ import vn.pph.oms_api.exception.ErrorCode;
 import vn.pph.oms_api.model.Cart;
 import vn.pph.oms_api.model.Discount;
 import vn.pph.oms_api.model.sku.Product;
+import vn.pph.oms_api.model.sku.Sku;
 import vn.pph.oms_api.repository.DiscountRepository;
 import vn.pph.oms_api.repository.ProductRepository;
+import vn.pph.oms_api.repository.SkuRepository;
 import vn.pph.oms_api.service.CheckoutService;
 import vn.pph.oms_api.service.DiscountService;
 import vn.pph.oms_api.service.ProductService;
 import vn.pph.oms_api.utils.CartStatus;
+import vn.pph.oms_api.utils.ProductUtils;
 import vn.pph.oms_api.utils.UserUtils;
 
 import java.math.BigDecimal;
@@ -37,7 +40,9 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CheckoutServiceImp implements CheckoutService {
     UserUtils userUtils;
+    ProductUtils productUtils;
     DiscountService discountService;
+    SkuRepository skuRepository;
     ProductService productService;
     ProductRepository productRepository;
     DiscountRepository discountRepository;
@@ -55,7 +60,7 @@ public class CheckoutServiceImp implements CheckoutService {
         log.info("Cart {} is valid for userId: {}", request.getCartId(), request.getUserId());
 
         List<ShopOrder> shopOrders = request.getShopOrders();
-        List<ShopOrderRes> orderRes = new ArrayList<>();
+        List<ShopOrderRes> orderResponses = new ArrayList<>();
 
         BigDecimal totalDiscount = BigDecimal.ZERO;
         BigDecimal totalPrice = BigDecimal.ZERO;
@@ -74,38 +79,49 @@ public class CheckoutServiceImp implements CheckoutService {
                     .collect(Collectors.toMap(Product::getId, p -> p));
 
             BigDecimal totalPerShop = BigDecimal.ZERO;
-            List<MockProductOrder> productCanApplyDiscount = new ArrayList<>();
+            List<MockProductOrder> productsApplyDiscount = new ArrayList<>();
 
             for (ItemProduct item : shopOrder.getItemProducts()) {
                 log.info("Checking productId: {} (quantity: {}) in shop {}", item.getProductId(), item.getQuantity(), shopOrder.getShopId());
 
-                Product product = productMap.get(item.getProductId());
-                if (product == null) {
-                    log.error("Product {} not found in shop {}", item.getProductId(), shopOrder.getShopId());
-                    throw new AppException(ErrorCode.PRODUCT_NOT_BELONG_TO_SHOP);
+                // check shop, product, sku all in if statement
+                if (!productUtils.checkProductSkuShop(item.getProductId(), shopOrder.getShopId(), item.getSkuCode())) {
+                    log.info("Sku code {} not in product {} of shop {}", item.getSkuCode(), item.getProductId(), shopOrder.getShopId());
+                    throw new AppException(ErrorCode.SKU_INCOMPATIBLE_PRODUCT);
                 }
+                log.info("shop, product, sku are compatible");
 
-                productCanApplyDiscount.add(MockProductOrder.builder()
+                Product product = productMap.get(item.getProductId());
+                Sku sku = product.getSkuList().stream().filter(s -> s.getSkuNo().equals(item.getSkuCode())).findFirst().get();
+                BigDecimal price = sku.getSkuPrice();
+
+                productsApplyDiscount.add(MockProductOrder.builder()
                         .shopId(shopOrder.getShopId())
-                        .price(product.getProductPrice())
+                        .price(price)
                         .quantity(item.getQuantity())
                         .productId(product.getId())
                         .build());
 
                 shopOrderRes.getItems().add(Item.builder()
-                        .price(product.getProductPrice())
+                        .price(price)
                         .quantity(item.getQuantity())
-                        .shopId(shopOrderRes.getShopId())
+                        .productId(product.getId())
                         .build());
 
-                totalPerShop = totalPerShop.add(product.getProductPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+                totalPerShop = totalPerShop.add(price.multiply(BigDecimal.valueOf(item.getQuantity())));
             }
 
             log.info("Total price for shop {} before discount: {}", shopOrder.getShopId(), totalPerShop);
 
             BigDecimal shopDiscountAmount = BigDecimal.ZERO;
-            for (ShopDiscount shopDiscount : shopOrder.getShopDiscounts()) {
+            List<ShopDiscount> shopDiscounts = shopOrder.getShopDiscounts();
+            for (ShopDiscount shopDiscount : shopDiscounts) {
                 log.info("Applying discount code {} for shop {}", shopDiscount.getCodeId(), shopOrder.getShopId());
+
+                if (!shopDiscount.getShopId().equals(shopOrder.getShopId())) {
+                    log.info("Shop {} in request different to shop in discount {}", shopOrder.getShopId(), shopDiscount.getShopId());
+                    throw new AppException(ErrorCode.DISCOUNT_NOT_BELONG_TO_SHOP);
+                }
 
                 Discount discount = discountRepository.findByCode(shopDiscount.getCodeId())
                         .orElseThrow(() -> {
@@ -116,7 +132,7 @@ public class CheckoutServiceImp implements CheckoutService {
                 AmountRequest amount = discountService.getDiscountAmount(RequestGetAmountDiscount.builder()
                         .code(discount.getCode())
                         .userId(request.getUserId())
-                        .productOrders(productCanApplyDiscount)
+                        .productOrders(productsApplyDiscount)
                         .build());
 
                 shopDiscountAmount = shopDiscountAmount.add(amount.getDiscountPrice());
@@ -124,14 +140,21 @@ public class CheckoutServiceImp implements CheckoutService {
 
             log.info("Total discount for shop {}: {}", shopOrder.getShopId(), shopDiscountAmount);
 
-            shopOrderRes.setDiscount(totalPerShop.subtract(shopDiscountAmount));
+            boolean hasDiscount = shopDiscountAmount.compareTo(BigDecimal.ZERO) != 0;
+            shopOrderRes.setDiscount( hasDiscount
+                    ? totalPerShop.subtract(shopDiscountAmount)
+                    : shopDiscountAmount);
+
             shopOrderRes.setPrice(totalPerShop);
-            shopOrderRes.setNewPrice(shopDiscountAmount);
+            shopOrderRes.setNewPrice(hasDiscount ? shopDiscountAmount : totalPerShop);
 
             totalPrice = totalPrice.add(totalPerShop);
-            totalDiscount = totalDiscount.add(totalPerShop.subtract(shopDiscountAmount));
 
-            orderRes.add(shopOrderRes);
+            totalDiscount = hasDiscount
+                    ? totalDiscount.add(totalPerShop.subtract(shopDiscountAmount))
+                    : BigDecimal.ZERO;
+
+            orderResponses.add(shopOrderRes);
         }
 
         BigDecimal feeShip = new BigDecimal(6);
@@ -144,7 +167,7 @@ public class CheckoutServiceImp implements CheckoutService {
                 .feeShip(feeShip)
                 .totalPrice(totalPrice)
                 .totalDiscount(totalDiscount)
-                .shopOrders(orderRes)
+                .shopOrders(orderResponses)
                 .build();
     }
 }

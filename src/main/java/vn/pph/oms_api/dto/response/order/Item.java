@@ -13,5 +13,5 @@ import java.math.BigDecimal;
 public class Item {
     private BigDecimal price;
     private int quantity;
-    private Long shopId;
+    private Long productId;
 }
