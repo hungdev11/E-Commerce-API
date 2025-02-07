@@ -17,10 +17,8 @@ import vn.pph.oms_api.exception.ErrorCode;
 import vn.pph.oms_api.model.Cart;
 import vn.pph.oms_api.model.CartProduct;
 import vn.pph.oms_api.model.sku.Product;
-import vn.pph.oms_api.repository.CartProductRepository;
-import vn.pph.oms_api.repository.CartRepository;
-import vn.pph.oms_api.repository.ProductRepository;
-import vn.pph.oms_api.repository.UserRepository;
+import vn.pph.oms_api.model.sku.Sku;
+import vn.pph.oms_api.repository.*;
 import vn.pph.oms_api.service.CartService;
 import vn.pph.oms_api.utils.ProductUtils;
 import vn.pph.oms_api.utils.UserUtils;
@@ -33,6 +31,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class CartServiceImp implements CartService {
+    private final SkuRepository skuRepository;
     private final ProductUtils productUtils;
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
@@ -73,13 +72,14 @@ public class CartServiceImp implements CartService {
                     return new AppException(ErrorCode.CART_NOT_FOUND);
                 });
         Long productId = request.getProductId();
-        if (!productUtils.checkProductOfShop(productId, request.getShopId())) {
-            log.error("Product {} not belong to shop {}", productId, request.getShopId());
-            throw new AppException(ErrorCode.PRODUCT_NOT_BELONG_TO_SHOP);
+        if (!productUtils.checkProductSkuShop(productId, request.getShopId(), request.getSkuNo())) {
+            log.info("Sku code {} not in product {} of shop {}", request.getSkuNo(), productId, request.getShopId());
+            throw new AppException(ErrorCode.SKU_INCOMPATIBLE_PRODUCT);
         }
+        log.info("shop, product, sku are compatible");
 
         Optional<CartProduct> existingProductOpt = cart.getProducts().stream()
-                .filter(product -> product.getProductId().equals(productId))
+                .filter(cp -> cp.getSkuNo().equals(request.getSkuNo()))
                 .findFirst();
 
         if (existingProductOpt.isPresent()) {
@@ -95,6 +95,7 @@ public class CartServiceImp implements CartService {
                     .productId(productId)
                     .shopId(request.getShopId())
                     .quantity(request.getQuantity())
+                    .skuNo(request.getSkuNo())
                     .cart(cart)
                     .build();
             cart.getProducts().add(cp);
@@ -122,6 +123,7 @@ public class CartServiceImp implements CartService {
 
         Long updatedShopId = null;
         Long updatedProductId = null;
+        String updatedSku = null;
         int updatedQuantity = 0;
 
         for (OrderShop shop : productsShop) {
@@ -131,16 +133,18 @@ public class CartServiceImp implements CartService {
                     throw new AppException(ErrorCode.PRODUCT_NOT_BELONG_TO_SHOP);
                 }
                 Optional<CartProduct> cartProductOpt = cartProducts.stream()
-                        .filter(cp -> cp.getProductId().equals(item.getProductId()))
+                        .filter(cp -> cp.getSkuNo().equals(item.getSkuNo()))
                         .findFirst();
-                if (!cartProductOpt.isPresent() && item.getNewQuantity() > 0) {
+                if (cartProductOpt.isEmpty() && item.getNewQuantity() > 0) {
                     log.info("Update new product {}", item.getProductId());
                     updatedShopId = shop.getShopId();
                     updatedProductId = item.getProductId();
+                    updatedSku = item.getSkuNo();
                     updatedQuantity = item.getNewQuantity();
                     addProductToCart(ProductAddToCartRequest.builder()
                             .productId(updatedProductId)
                             .quantity(updatedQuantity)
+                            .skuNo(updatedSku)
                             .shopId(updatedShopId)
                             .userId(cartRepository.findById(request.getCartId()).get().getUserId())
                             .build());
@@ -162,17 +166,19 @@ public class CartServiceImp implements CartService {
                         updatedShopId = shop.getShopId();
                         updatedProductId = item.getProductId();
                         updatedQuantity = cartProduct.getQuantity();
+                        updatedSku = item.getSkuNo();
                     }
                 }
             }
         }
+        cart.setCartCount(cart.getProducts().size());
         cartRepository.save(cart);
         log.info("Cart successfully updated for cartId {}", request.getCartId());
-
         return CartUpdateResponse.builder()
                 .shopId(updatedShopId)
                 .productId(updatedProductId)
                 .quantity(updatedQuantity)
+                .skuNo(updatedSku)
                 .cardCount(cart.getCartCount())
                 .build();
     }
@@ -191,17 +197,18 @@ public class CartServiceImp implements CartService {
                     .build();
         }
 
-        Map<Long, BigDecimal> productPrices = productRepository.findAllById(
-                        cartProducts.stream().map(CartProduct::getProductId).collect(Collectors.toSet()))
-                .stream().collect(Collectors.toMap(Product::getId, Product::getProductPrice));
+        Map<String, BigDecimal> productPrices = skuRepository.findAllBySkuNoIn(
+                        cartProducts.stream().map(CartProduct::getSkuNo).collect(Collectors.toSet()))
+                .stream().collect(Collectors.toMap(Sku::getSkuNo, Sku::getSkuPrice));
 
         List<OrderByShop> orderShops = cartProducts.stream()
                 .collect(Collectors.groupingBy(
                         CartProduct::getShopId,
                         Collectors.mapping(p -> ShopItem.builder()
+                                        .skuNo(p.getSkuNo())
                                         .productId(p.getProductId())
                                         .quantity(p.getQuantity())
-                                        .price(productPrices.getOrDefault(p.getProductId(), BigDecimal.ZERO))
+                                        .price(productPrices.getOrDefault(p.getSkuNo(), BigDecimal.ZERO))
                                         .build(),
                                 Collectors.toList())
                 ))

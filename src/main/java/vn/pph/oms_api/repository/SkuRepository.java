@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import vn.pph.oms_api.model.sku.Product;
 import vn.pph.oms_api.model.sku.Sku;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,5 +15,6 @@ import java.util.Optional;
 public interface SkuRepository extends JpaRepository<Sku, Long> {
     Page<Sku> findAllByProduct(Product product, Pageable pageable);
     List<Sku> findAllByProduct(Product product);
+    List<Sku> findAllBySkuNoIn(Collection<String> skuNos);
     Optional<Sku> findBySkuNo(String skuNo);
 }

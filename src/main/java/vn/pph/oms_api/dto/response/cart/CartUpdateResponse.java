@@ -11,6 +11,7 @@ import lombok.*;
 public class CartUpdateResponse {
     private Long shopId;
     private Long productId;
+    private String skuNo;
     private int quantity;
     private int cardCount;
 }

@@ -31,7 +31,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -106,6 +105,7 @@ public class CheckoutServiceImp implements CheckoutService {
                         .price(price)
                         .quantity(item.getQuantity())
                         .productId(product.getId())
+                        .skuNo(sku.getSkuNo())
                         .build());
 
                 totalPerShop = totalPerShop.add(price.multiply(BigDecimal.valueOf(item.getQuantity())));

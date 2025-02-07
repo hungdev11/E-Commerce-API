@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Builder
 @AllArgsConstructor
-class Checkout {
+public class Checkout {
     private BigDecimal totalPrice;
     private BigDecimal feeShip;
     private BigDecimal totalDiscount;

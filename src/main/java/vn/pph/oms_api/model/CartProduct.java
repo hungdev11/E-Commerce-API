@@ -12,6 +12,7 @@ import lombok.*;
 @Entity
 public class CartProduct extends BaseEntity{
     private Long productId;
+    private String skuNo;
     private Long shopId;
     private int quantity;
 

@@ -16,7 +16,6 @@ import java.util.List;
 @Entity
 public class Cart extends BaseEntity {
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Column(nullable = false)
     @Builder.Default
     private List<CartProduct> products = new ArrayList<>();
 

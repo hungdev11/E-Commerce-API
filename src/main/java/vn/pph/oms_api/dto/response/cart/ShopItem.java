@@ -14,4 +14,5 @@ public class ShopItem {
     private int quantity;
     private BigDecimal price;
     private Long productId;
+    private String skuNo;
 }

@@ -38,6 +38,8 @@ public enum ErrorCode {
     CART_NOT_FOUND(1408, "Can not find cart", HttpStatus.BAD_REQUEST),
     CART_STATUS_INVALID(1409, "Cart is inactive", HttpStatus.BAD_REQUEST),
     INCONSISTENCY(1410, "Two value are in-consistence", HttpStatus.BAD_REQUEST),
+    INVENTORY_NOT_FOUND(1411, "This sku doesn't have inventory", HttpStatus.BAD_REQUEST),
+    INVENTORY_OUT_OF_STOCK(1412, "This sku is out of stock", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;

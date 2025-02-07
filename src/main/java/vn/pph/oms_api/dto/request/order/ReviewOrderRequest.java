@@ -5,9 +5,9 @@ import lombok.*;
 import java.util.List;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ReviewOrderRequest {
     private Long cartId;
     private Long userId;

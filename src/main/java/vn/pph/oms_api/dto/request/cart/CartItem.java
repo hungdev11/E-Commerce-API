@@ -4,14 +4,14 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Getter
-@Setter
 public class CartItem {
     private int oldQuantity;
     private int newQuantity;
     private BigDecimal price;
     private Long productId;
+    private String skuNo;
 }

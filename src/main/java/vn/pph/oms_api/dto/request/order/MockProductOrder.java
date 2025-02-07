@@ -4,12 +4,10 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
-@Data
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Getter
-@Setter
 public class  MockProductOrder {
     private Long shopId;
     private Long productId;

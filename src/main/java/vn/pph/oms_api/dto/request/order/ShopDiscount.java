@@ -1,14 +1,11 @@
 package vn.pph.oms_api.dto.request.order;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ShopDiscount {
     private Long shopId;
     private Long discountId;

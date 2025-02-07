@@ -11,6 +11,7 @@ import lombok.*;
 public class ProductAddToCartRequest {
     private Long userId;
     private Long productId;
+    private String skuNo;
     private Long shopId;
     @Min(value = 1, message = "Quantity must greater or equal 1")
     private int quantity;

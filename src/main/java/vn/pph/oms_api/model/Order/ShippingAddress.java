@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-class ShippingAddress {
+public class ShippingAddress {
     private String street;
     private String city;
     private String state;
