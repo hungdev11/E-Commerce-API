@@ -72,10 +72,7 @@ public class CartServiceImp implements CartService {
                     return new AppException(ErrorCode.CART_NOT_FOUND);
                 });
         Long productId = request.getProductId();
-        if (!productUtils.checkProductSkuShop(productId, request.getShopId(), request.getSkuNo())) {
-            log.info("Sku code {} not in product {} of shop {}", request.getSkuNo(), productId, request.getShopId());
-            throw new AppException(ErrorCode.SKU_INCOMPATIBLE_PRODUCT);
-        }
+        productUtils.checkProductSkuShop(productId, request.getShopId(), request.getSkuNo());
         log.info("shop, product, sku are compatible");
 
         Optional<CartProduct> existingProductOpt = cart.getProducts().stream()

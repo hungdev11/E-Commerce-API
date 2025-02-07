@@ -38,10 +38,8 @@ public class InventoryServiceImp implements InventoryService {
         String skuNumber = request.getSkuNumber();
         int stock = request.getStock();
 
-        if (!productUtils.checkProductSkuShop(productId, shopId, skuNumber)) {
-            log.info("Product {} doesn't have sku {}", productId, skuNumber);
-            throw new AppException(ErrorCode.SKU_INCOMPATIBLE_PRODUCT);
-        }
+        productUtils.checkProductSkuShop(productId, shopId, skuNumber);
+        log.info("shop, product, sku are compatible");
 
         Sku sku = skuRepository.findBySkuNo(skuNumber).get();
 

@@ -1,7 +1,8 @@
 package vn.pph.oms_api.service;
 
 import vn.pph.oms_api.dto.request.order.CompleteOrderRequest;
+import vn.pph.oms_api.dto.response.order.OrderResponse;
 
 public interface OrderService {
-    Object completeOrder (CompleteOrderRequest request);
+    OrderResponse completeOrder (CompleteOrderRequest request);
 }

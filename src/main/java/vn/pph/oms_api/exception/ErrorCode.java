@@ -40,6 +40,7 @@ public enum ErrorCode {
     INCONSISTENCY(1410, "Two value are in-consistence", HttpStatus.BAD_REQUEST),
     INVENTORY_NOT_FOUND(1411, "This sku doesn't have inventory", HttpStatus.BAD_REQUEST),
     INVENTORY_OUT_OF_STOCK(1412, "This sku is out of stock", HttpStatus.BAD_REQUEST),
+    PRODUCT_IS_PRIVATE(1413, "This sku is not publish", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;

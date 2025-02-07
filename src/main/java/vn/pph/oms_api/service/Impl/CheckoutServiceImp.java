@@ -50,7 +50,6 @@ public class CheckoutServiceImp implements CheckoutService {
     public CheckoutResponse review(ReviewOrderRequest request) {
         log.info("Start review order for userId: {}", request.getUserId());
 
-        // Kiểm tra giỏ hàng của user
         Cart cart = userUtils.checkCartOfUser(request.getUserId());
         if (!cart.getStatus().equals(CartStatus.ACTIVE)) {
             log.error("Cart status is invalid for userId: {} (cartId: {})", request.getUserId(), request.getCartId());
@@ -72,7 +71,6 @@ public class CheckoutServiceImp implements CheckoutService {
                     .items(new ArrayList<>())
                     .build();
 
-            // Lấy danh sách sản phẩm của shop từ database
             List<Product> shopProducts = productRepository.findAllByProductShopId(shopOrder.getShopId());
             Map<Long, Product> productMap = shopProducts.stream()
                     .collect(Collectors.toMap(Product::getId, p -> p));
@@ -83,11 +81,7 @@ public class CheckoutServiceImp implements CheckoutService {
             for (ItemProduct item : shopOrder.getItemProducts()) {
                 log.info("Checking productId: {} (quantity: {}) in shop {}", item.getProductId(), item.getQuantity(), shopOrder.getShopId());
 
-                // check shop, product, sku all in if statement
-                if (!productUtils.checkProductSkuShop(item.getProductId(), shopOrder.getShopId(), item.getSkuCode())) {
-                    log.info("Sku code {} not in product {} of shop {}", item.getSkuCode(), item.getProductId(), shopOrder.getShopId());
-                    throw new AppException(ErrorCode.SKU_INCOMPATIBLE_PRODUCT);
-                }
+                productUtils.checkProductSkuShop(item.getProductId(), shopOrder.getShopId(), item.getSkuCode());
                 log.info("shop, product, sku are compatible");
 
                 Product product = productMap.get(item.getProductId());
