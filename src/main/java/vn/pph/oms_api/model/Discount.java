@@ -63,9 +63,10 @@ public class Discount extends BaseEntity{
     private Long shopId;
 
     @Builder.Default
+    @Enumerated(EnumType.STRING)
     private DiscountStatus status = DiscountStatus.INACTIVE;
 
-    @Column(name = "apply_to", nullable = false)
+    @Column(name = "apply_to")
     @Builder.Default
     private DiscountApplyTo applyTo = DiscountApplyTo.ALL;
 

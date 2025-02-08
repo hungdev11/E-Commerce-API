@@ -27,5 +27,6 @@ public class Cart extends BaseEntity {
     private Long userId;
 
     @Builder.Default
+    @Enumerated(EnumType.STRING)
     private CartStatus status = CartStatus.ACTIVE;
 }

@@ -4,26 +4,30 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.pph.oms_api.dto.request.order.CompleteOrderRequest;
+import vn.pph.oms_api.dto.response.PageResponse;
 import vn.pph.oms_api.dto.response.order.*;
+import vn.pph.oms_api.dto.response.product.ProductResponse;
 import vn.pph.oms_api.exception.AppException;
 import vn.pph.oms_api.exception.ErrorCode;
-import vn.pph.oms_api.model.Cart;
-import vn.pph.oms_api.model.CartProduct;
-import vn.pph.oms_api.model.Inventory;
+import vn.pph.oms_api.model.*;
 import vn.pph.oms_api.model.Order.Checkout;
 import vn.pph.oms_api.model.Order.Order;
 import vn.pph.oms_api.model.Order.OrderProduct;
-import vn.pph.oms_api.model.ReservationItem;
 import vn.pph.oms_api.model.sku.Product;
 import vn.pph.oms_api.model.sku.Sku;
 import vn.pph.oms_api.repository.*;
 import vn.pph.oms_api.service.CheckoutService;
 import vn.pph.oms_api.service.OrderService;
+import vn.pph.oms_api.utils.OrderStatus;
 import vn.pph.oms_api.utils.ProductUtils;
 import vn.pph.oms_api.utils.UserUtils;
+import vn.pph.oms_api.utils.Utils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -59,8 +63,12 @@ public class OrderServiceImp implements OrderService {
         // check product, sku, shop is OK
         List<ShopOrderRes> shopOrders = checkoutResponse.getShopOrders();
         List<OrderProduct> orderProducts = new ArrayList<>();
-
         for (ShopOrderRes shopOrder : shopOrders) {
+            if (shopOrder.getItems().isEmpty()) {
+                log.info("Order of shop {} must have at least one product", shopOrder.getShopId());
+                throw new AppException(ErrorCode.SOME_THING_WENT_WRONG);
+            }
+            List<OrderProduct> shopProducts = new ArrayList<>();
             List<Item> items = shopOrder.getItems();
             for (Item item : items) {
                 log.info("Processing item SKU: {} for user {}", item.getSkuNo(), request.getCheckoutRequest().getUserId());
@@ -93,36 +101,25 @@ public class OrderServiceImp implements OrderService {
                             .build());
                     inventoryRepository.save(inventory);
                 }
-
-                orderProducts.add(OrderProduct.builder()
+                shopProducts.add(OrderProduct.builder()
                         .skuNo(item.getSkuNo())
                         .price(sku.getSkuPrice())
                         .productId(item.getProductId())
                         .quantity(item.getQuantity())
                         .build());
             }
-        }
-        Order order = Order.builder()
-                .user(userRepository.findById(request.getCheckoutRequest().getUserId()).get())
-                .shipping(request.getAddress())
-                .paymentMethod(request.getPaymentMethod())
-                .checkout(Checkout.builder()
-                        .totalPrice(checkoutResponse.getTotalPrice())
-                        .feeShip(checkoutResponse.getFeeShip())
-                        .totalCheckout(checkoutResponse.getTotalCheckout())
-                        .totalDiscount(checkoutResponse.getTotalDiscount())
-                        .build())
-                .orderProducts(orderProducts)
-                .build();
+            Order order = createOrder(shopOrder, checkoutResponse, request, shopProducts);
+            for (OrderProduct op : shopProducts) {
+                op.setOrder(order);
+            }
+            Order savedOrder = orderRepository.save(order);
+            savedOrder.setTrackingOrder(savedOrder.getId() + LocalDate.now().toString().replace("-", ""));
+            orderRepository.save(savedOrder);
 
-        for (OrderProduct op : orderProducts) {
-            op.setOrder(order);
+            orderProducts.addAll(savedOrder.getOrderProducts());
         }
-        Order savedOrder = orderRepository.save(order);
-        savedOrder.setTrackingOrder(savedOrder.getId() + LocalDate.now().toString().replace("-", ""));
-        orderRepository.save(savedOrder);
 
-        List<OrderProductResponse> orderProductList = savedOrder.getOrderProducts()
+        List<OrderProductResponse> orderProductList = orderProducts
                 .stream()
                 .map(op -> OrderProductResponse.builder()
                         .productId(op.getProductId())
@@ -153,4 +150,106 @@ public class OrderServiceImp implements OrderService {
                 .orderProducts(orderProductList)
                 .build();
     }
+
+    @Override
+    public OrderResponse getOrderById(Long orderId) {
+        Order order = orderRepository
+                .findById(orderId)
+                .orElseThrow(()-> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        List<OrderProductResponse> responses = order.getOrderProducts().stream()
+                .map(op -> OrderProductResponse.builder()
+                        .productId(op.getProductId())
+                        .skuNo(op.getSkuNo())
+                        .price(op.getPrice())
+                        .quantity(op.getQuantity())
+                        .build())
+                .toList();
+        return OrderResponse.builder()
+                .shopId(order.getShopId())
+                .userId(order.getUser().getId())
+                .paymentMethod(order.getPaymentMethod())
+                .status(order.getStatus())
+                .shipping(order.getShipping())
+                .checkout(order.getCheckout())
+                .orderProducts(responses)
+                .build();
+    }
+
+    @Override
+    public PageResponse<?> getUserOrders(Long userId, int page, int size) {
+        if (page < 0) {
+            log.warn("Invalid page number: {}. Defaulting to 0.", page);
+            page = 0;
+        }
+
+        log.info("Fetching orders for userId: {} | Page: {} | Size: {}", userId, page, size);
+
+        User user = userUtils.checkUserExists(userId);
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Order> orderPage = orderRepository.findByUser(user, pageable);
+
+        if (orderPage.isEmpty()) {
+            log.info("No orders found for user {}", userId);
+        } else {
+            log.info("Total orders found: {} | Current Page: {} / {}",
+                    orderPage.getTotalElements(), orderPage.getNumber() + 1, orderPage.getTotalPages());
+        }
+
+        List<OrderResponse> orderResponses = orderPage.getContent().stream()
+                .map(op -> this.getOrderById(op.getId()))
+                .toList();
+
+        return PageResponse.<List<OrderResponse>>builder()
+                .page(orderPage.getNumber())
+                .size(orderPage.getSize())
+                .total(orderPage.getTotalPages())
+                .items(orderResponses)
+                .build();
+    }
+
+
+
+    @Override
+    public void cancelOrder(Long userId, Long orderId) {
+        User user = userUtils.checkUserExists(userId);
+        int orderIdx = user.getOrders().stream().map(BaseEntity::getId).toList().indexOf(orderId);
+        if (orderIdx == -1) {
+            throw new AppException(ErrorCode.ORDER_NOT_BELONG_TO_USER);
+        }
+        Order order = user.getOrders().get(orderIdx);
+        if (!(order.getStatus().equals(OrderStatus.PENDING) || order.getStatus().equals(OrderStatus.CONFIRMED))) {
+            throw new AppException(ErrorCode.ORDER_STATUS_NOT_CHANGEABLE);
+        }
+        order.setStatus(OrderStatus.CANCELED);
+        orderRepository.save(order);
+    }
+
+    @Override
+    public void updateOrderStatus(Long orderId, Long shopId, OrderStatus status) {
+        User shop = userUtils.checkUserExists(shopId);
+        Order order = orderRepository.findById(orderId).orElseThrow(()->new AppException(ErrorCode.ORDER_NOT_FOUND));
+        if (!order.getShopId().equals(shop.getId())) {
+            throw new AppException(ErrorCode.ORDER_NOT_BELONG_TO_SHOP);
+        }
+        order.setStatus(status);
+        orderRepository.save(order);
+    }
+
+    private Order createOrder(ShopOrderRes shopOrder, CheckoutResponse checkoutResponse, CompleteOrderRequest request, List<OrderProduct> shopProducts) {
+        return Order.builder()
+                .shopId(shopOrder.getShopId())
+                .user(userRepository.findById(request.getCheckoutRequest().getUserId()).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND)))
+                .shipping(request.getAddress())
+                .paymentMethod(request.getPaymentMethod())
+                .checkout(Checkout.builder()
+                        .totalPrice(shopOrder.getPrice())
+                        .feeShip(checkoutResponse.getFeeShip())
+                        .totalCheckout(shopOrder.getNewPrice())
+                        .totalDiscount(shopOrder.getPrice().subtract(shopOrder.getNewPrice()))
+                        .build())
+                .orderProducts(shopProducts)
+                .build();
+    }
+
 }

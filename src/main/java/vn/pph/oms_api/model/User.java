@@ -24,8 +24,12 @@ public class User {
     String name;
     String email;
     String password;
+
+    @Enumerated(EnumType.STRING)
     UserStatus status;
+
     boolean isVerify;
+
     Set<String> roles;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)

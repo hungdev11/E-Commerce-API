@@ -20,6 +20,8 @@ public class Order extends BaseEntity {
     @ManyToOne()
     private User user;
 
+    private Long shopId;
+
     @Embedded
     private Checkout checkout;
 

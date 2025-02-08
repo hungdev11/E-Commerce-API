@@ -41,6 +41,10 @@ public enum ErrorCode {
     INVENTORY_NOT_FOUND(1411, "This sku doesn't have inventory", HttpStatus.BAD_REQUEST),
     INVENTORY_OUT_OF_STOCK(1412, "This sku is out of stock", HttpStatus.BAD_REQUEST),
     PRODUCT_IS_PRIVATE(1413, "This sku is not publish", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_FOUND(1500, "Order doesn't exist", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_BELONG_TO_SHOP(1501, "Order not belong to shop", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_BELONG_TO_USER(1502, "Order not belong to user", HttpStatus.BAD_REQUEST),
+    ORDER_STATUS_NOT_CHANGEABLE(1503, "Order stats can't not change", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;
