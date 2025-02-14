@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import vn.pph.oms_api.dto.request.order.CompleteOrderRequest;
 import vn.pph.oms_api.dto.request.order.ReviewOrderRequest;
-import vn.pph.oms_api.dto.response.ApiResponse;
+import vn.pph.oms_api.dto.response.APIResponse;
 import vn.pph.oms_api.service.CheckoutService;
 import vn.pph.oms_api.service.OrderService;
 import vn.pph.oms_api.utils.OrderStatus;
@@ -19,19 +19,19 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/checkout")
-    public ApiResponse<?> create(@RequestBody ReviewOrderRequest request) {
+    public APIResponse<?> review(@RequestBody ReviewOrderRequest request) {
         log.info("Request received to review order: {}", request);
-        return ApiResponse.builder()
+        return APIResponse.builder()
                 .code(200)
                 .message("Review OK")
-                .data(checkoutService.review(request))
+                .data(checkoutService.review(request, true))
                 .build();
     }
 
     @PostMapping("/complete")
-    public ApiResponse<?> completeOrder(@RequestBody CompleteOrderRequest request) {
+    public APIResponse<?> completeOrder(@RequestBody CompleteOrderRequest request) {
         log.info("Request received to complete order for user: {}", request.getCheckoutRequest().getUserId());
-        return ApiResponse.builder()
+        return APIResponse.builder()
                 .code(200)
                 .message("Create order OK")
                 .data(orderService.completeOrder(request))
@@ -39,9 +39,9 @@ public class OrderController {
     }
 
     @GetMapping("/get/{orderId}")
-    public ApiResponse<?> getOrderById(@PathVariable Long orderId) {
+    public APIResponse<?> getOrderById(@PathVariable Long orderId) {
         log.info("Fetching order details for orderId: {}", orderId);
-        return ApiResponse.builder()
+        return APIResponse.builder()
                 .code(200)
                 .message("Order details fetched successfully")
                 .data(orderService.getOrderById(orderId))
@@ -49,11 +49,11 @@ public class OrderController {
     }
 
     @GetMapping("/user-orders")
-    public ApiResponse<?> getUserOrders(@RequestParam Long userId,
+    public APIResponse<?> getUserOrders(@RequestParam Long userId,
                                         @RequestParam(defaultValue = "0") int page,
                                         @RequestParam(defaultValue = "2") int size) {
         log.info("Fetching orders for userId: {} | Page: {} | Size: {}", userId, page, size);
-        return ApiResponse.builder()
+        return APIResponse.builder()
                 .code(200)
                 .message("User orders fetched successfully")
                 .data(orderService.getUserOrders(userId, page, size))
@@ -61,23 +61,23 @@ public class OrderController {
     }
 
     @PostMapping("/cancel")
-    public ApiResponse<?> cancelOrder(@RequestParam Long userId,
+    public APIResponse<?> cancelOrder(@RequestParam Long userId,
                                       @RequestParam Long orderId) {
         log.info("User {} is requesting to cancel order {}", userId, orderId);
         orderService.cancelOrder(userId, orderId);
-        return ApiResponse.builder()
+        return APIResponse.builder()
                 .code(200)
                 .message("Order canceled successfully")
                 .build();
     }
 
     @PostMapping("/update-status")
-    public ApiResponse<?> updateOrderStatus(@RequestParam Long orderId,
+    public APIResponse<?> updateOrderStatus(@RequestParam Long orderId,
                                             @RequestParam Long shopId,
                                             @RequestParam OrderStatus status) {
         log.info("Shop {} is updating status of order {} to {}", shopId, orderId, status);
         orderService.updateOrderStatus(orderId, shopId, status);
-        return ApiResponse.builder()
+        return APIResponse.builder()
                 .code(200)
                 .message("Order status updated successfully")
                 .build();

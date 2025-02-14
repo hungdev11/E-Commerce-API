@@ -1,5 +1,6 @@
 package vn.pph.oms_api.service.Impl;
 
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -15,11 +16,13 @@ import vn.pph.oms_api.exception.AppException;
 import vn.pph.oms_api.exception.ErrorCode;
 import vn.pph.oms_api.model.Cart;
 import vn.pph.oms_api.model.Discount;
+import vn.pph.oms_api.model.User;
 import vn.pph.oms_api.model.sku.Product;
 import vn.pph.oms_api.model.sku.Sku;
 import vn.pph.oms_api.repository.DiscountRepository;
 import vn.pph.oms_api.repository.ProductRepository;
 import vn.pph.oms_api.repository.SkuRepository;
+import vn.pph.oms_api.repository.UserRepository;
 import vn.pph.oms_api.service.CheckoutService;
 import vn.pph.oms_api.service.DiscountService;
 import vn.pph.oms_api.service.ProductService;
@@ -38,6 +41,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CheckoutServiceImp implements CheckoutService {
+    private final UserRepository userRepository;
     UserUtils userUtils;
     ProductUtils productUtils;
     DiscountService discountService;
@@ -47,15 +51,16 @@ public class CheckoutServiceImp implements CheckoutService {
     DiscountRepository discountRepository;
 
     @Override
-    public CheckoutResponse review(ReviewOrderRequest request) {
+    @Transactional
+    public CheckoutResponse review(ReviewOrderRequest request, boolean justReview) {
         log.info("Start review order for userId: {}", request.getUserId());
-
         Cart cart = userUtils.checkCartOfUser(request.getUserId());
         if (!cart.getStatus().equals(CartStatus.ACTIVE)) {
             log.error("Cart status is invalid for userId: {} (cartId: {})", request.getUserId(), request.getCartId());
             throw new AppException(ErrorCode.CART_STATUS_INVALID);
         }
         log.info("Cart {} is valid for userId: {}", request.getCartId(), request.getUserId());
+        User user = userRepository.findById(request.getUserId()).get();
 
         List<ShopOrder> shopOrders = request.getShopOrders();
         List<ShopOrderRes> orderResponses = new ArrayList<>();
@@ -130,6 +135,12 @@ public class CheckoutServiceImp implements CheckoutService {
                         .build());
 
                 shopDiscountAmount = shopDiscountAmount.add(amount.getDiscountPrice());
+
+                if(!justReview) {
+                    discount.getUsersUsed().add(user);
+                    discount.setMaximumQuantity(discount.getMaximumQuantity() - 1);
+                    discountRepository.save(discount);
+                }
             }
 
             log.info("Total discount for shop {}: {}", shopOrder.getShopId(), shopDiscountAmount);

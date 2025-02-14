@@ -9,7 +9,7 @@ import vn.pph.oms_api.dto.request.token.RefreshTokenRequest;
 import vn.pph.oms_api.dto.request.user.UserLogOutRequest;
 import vn.pph.oms_api.dto.request.user.UserSignInRequest;
 import vn.pph.oms_api.dto.request.user.UserSignUpRequest;
-import vn.pph.oms_api.dto.response.ApiResponse;
+import vn.pph.oms_api.dto.response.APIResponse;
 import vn.pph.oms_api.service.AuthenticationService;
 
 @RestController
@@ -20,32 +20,32 @@ import vn.pph.oms_api.service.AuthenticationService;
 public class AuthenticationController {
     AuthenticationService authenticationService;
     @PostMapping("/sign-up")
-    public ApiResponse<?> signUp(@RequestBody UserSignUpRequest request) {
-        return ApiResponse.builder()
+    public APIResponse<?> signUp(@RequestBody UserSignUpRequest request) {
+        return APIResponse.builder()
                 .code(200)
                 .message("Registration successful")
                 .data(authenticationService.signUp(request))
                 .build();
     }
     @PostMapping("/sign-in")
-    public ApiResponse<?> signIn(@RequestBody UserSignInRequest request, @RequestParam(required = false) String privateKey) {
-        return ApiResponse.builder()
+    public APIResponse<?> signIn(@RequestBody UserSignInRequest request, @RequestParam(required = false) String privateKey) {
+        return APIResponse.builder()
                 .code(200)
                 .message("Login successfully")
                 .data(authenticationService.signIn(request, privateKey))
                 .build();
     }
     @PostMapping("/log-out")
-    public ApiResponse<?> logOut(@RequestBody UserLogOutRequest request) {
+    public APIResponse<?> logOut(@RequestBody UserLogOutRequest request) {
         authenticationService.logOut(request);
-        return ApiResponse.builder()
+        return APIResponse.builder()
                 .code(200)
                 .message("Log out successfully")
                 .build();
     }
     @PostMapping("/refresh-token")
-    public ApiResponse<?> refreshToken(@RequestBody RefreshTokenRequest request) {
-        return ApiResponse.builder()
+    public APIResponse<?> refreshToken(@RequestBody RefreshTokenRequest request) {
+        return APIResponse.builder()
                 .code(200)
                 .message("Got new pair of tokens")
                 .data(authenticationService.refreshToken(request))

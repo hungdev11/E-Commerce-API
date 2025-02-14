@@ -30,3 +30,4 @@ logging:
 admin:
   name: admin
   password: admin123
+

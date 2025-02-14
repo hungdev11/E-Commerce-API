@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vn.pph.oms_api.dto.request.product.InventoryAddingRequest;
-import vn.pph.oms_api.dto.response.ApiResponse;
+import vn.pph.oms_api.dto.response.APIResponse;
 import vn.pph.oms_api.service.InventoryService;
 
 @RestController
@@ -21,9 +21,9 @@ public class InventoryController {
     InventoryService inventoryService;
 
     @PostMapping("/add")
-    public ApiResponse<?> addNewInventory(@RequestBody InventoryAddingRequest request) {
+    public APIResponse<?> addNewInventory(@RequestBody InventoryAddingRequest request) {
         log.info("Controller: add inventory sku {} location {} stock {}", request.getSkuNumber(), request.getLocation(), request.getStock());
-        return ApiResponse.builder()
+        return APIResponse.builder()
                 .data(inventoryService.addInventory(request))
                 .code(201)
                 .message("Add new inventory successfully")

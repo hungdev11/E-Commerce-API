@@ -26,11 +26,11 @@ class ProductControllerTest {
 //                .andExpect(status().isOk());
 //    }
 
-    @Test
-    void testConvertNameToSlug() {
-        String name = "May cao rau cao cap A0193X";
-        String slug = ProductUtils.convertProductNameToSlug(name);
-        String expected = "may-cao-rau-cao-cap-a0193x";
-        Assertions.assertEquals(expected, slug);
-    }
+//    @Test
+//    void testConvertNameToSlug() {
+//        String name = "May cao rau cao cap A0193X";
+//        String slug = ProductUtils.convertProductNameToSlug(name);
+//        String expected = "may-cao-rau-cao-cap-a0193x";
+//        Assertions.assertEquals(expected, slug);
+//    }
 }

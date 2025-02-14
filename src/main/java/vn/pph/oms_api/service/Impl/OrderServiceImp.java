@@ -59,7 +59,7 @@ public class OrderServiceImp implements OrderService {
 
         log.info("Starting order completion for user {}", request.getCheckoutRequest().getUserId());
 
-        CheckoutResponse checkoutResponse = checkoutService.review(request.getCheckoutRequest());
+        CheckoutResponse checkoutResponse = checkoutService.review(request.getCheckoutRequest(), false);
         // check product, sku, shop is OK
         List<ShopOrderRes> shopOrders = checkoutResponse.getShopOrders();
         List<OrderProduct> orderProducts = new ArrayList<>();
