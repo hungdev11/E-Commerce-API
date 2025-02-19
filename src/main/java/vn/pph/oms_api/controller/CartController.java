@@ -1,6 +1,8 @@
 package vn.pph.oms_api.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -40,7 +42,10 @@ public class CartController {
                 .build();
     }
     @GetMapping("/products")
-    public APIResponse<CartResponse> products(@RequestParam Long userId) {
+    public APIResponse<CartResponse> products(
+            @NotNull(message = "User id is required")
+            @Min(value = 0, message = "User id must be greater or equal to 0") @RequestParam Long userId
+    ) {
         log.info("Controller: get products in cart of user {}", userId);
         return APIResponse.<CartResponse>builder()
                 .code(200)

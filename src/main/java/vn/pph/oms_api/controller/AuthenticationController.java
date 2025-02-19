@@ -1,9 +1,11 @@
 package vn.pph.oms_api.controller;
 
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import vn.pph.oms_api.dto.request.token.RefreshTokenRequest;
 import vn.pph.oms_api.dto.request.user.UserLogOutRequest;
@@ -44,7 +46,7 @@ public class AuthenticationController {
                 .build();
     }
     @PostMapping("/refresh-token")
-    public APIResponse<?> refreshToken(@RequestBody RefreshTokenRequest request) {
+    public APIResponse<?> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         return APIResponse.builder()
                 .code(200)
                 .message("Got new pair of tokens")
